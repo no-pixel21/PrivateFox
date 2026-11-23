@@ -1,0 +1,7 @@
+# Skripte immer mit LF, sonst laufen sie in der MozillaBuild-Shell nicht
+*.sh   text eol=lf
+*.py   text eol=lf
+*.cfg  text eol=lf
+*.js   text eol=lf
+mozconfig text eol=lf
+FIREFOX_VERSION text eol=lf

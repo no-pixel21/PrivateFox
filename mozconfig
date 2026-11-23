@@ -1,0 +1,26 @@
+# Private Fox – Build-Konfiguration
+# Wird von scripts/prepare_tree.py in den Firefox-Quellcode kopiert.
+
+ac_add_options --enable-application=browser
+ac_add_options --enable-release
+ac_add_options --enable-optimize
+ac_add_options --disable-debug
+ac_add_options --disable-tests
+
+# Eigener Name und eigenes Branding
+ac_add_options --with-branding=browser/branding/privatefox
+ac_add_options --with-app-name=privatefox
+ac_add_options --with-app-basename=PrivateFox
+
+# Nichts an Mozilla melden, keine Mozilla-Auto-Updates (Updates = neu bauen)
+ac_add_options --disable-crashreporter
+ac_add_options --disable-updater
+
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    # Windows: kein Hintergrund-Dienst, der den Standardbrowser an Mozilla meldet
+    ac_add_options --disable-default-browser-agent
+    ;;
+esac
+
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-privatefox

@@ -1,0 +1,18 @@
+# -*- Mode: python -*-
+# Private Fox: Richtlinien, Autoconfig und Startskript mit ausliefern.
+
+FINAL_TARGET_FILES.distribution += [
+    "policies-level0.json",
+    "policies-level1.json",
+    "policies-level2.json",
+    "policies-level3.json",
+    "policies-level4.json",
+]
+
+FINAL_TARGET_FILES.defaults.pref += [
+    "autoconfig.js",
+]
+
+FINAL_TARGET_FILES += [
+    "privatefox.cfg",
+]
