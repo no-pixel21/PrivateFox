@@ -1,5 +1,5 @@
 # -*- Mode: python -*-
-# Private Fox: ship policies, autoconfig and startup script.
+# Private Fox: ship policies and the startup script.
 
 # browser/moz.build exports DIST_SUBDIR = "browser", which would put these files into
 # <app>/browser/. Firefox reads distribution/, defaults/pref/ and the autoconfig file from
@@ -14,11 +14,8 @@ FINAL_TARGET_FILES.distribution += [
     "policies-level4.json",
 ]
 
-# Pref files in defaults/pref/ need their own variable; FINAL_TARGET_FILES does not
-# install them there.
-JS_PREFERENCE_FILES += [
-    "autoconfig.js",
-]
+# The autoconfig prefs (general.config.*) are not shipped as a separate file; prepare_tree.py
+# appends them to Firefox's own default prefs, which are always packaged.
 
 FINAL_TARGET_FILES += [
     "privatefox.cfg",
