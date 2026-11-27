@@ -14,7 +14,9 @@ FINAL_TARGET_FILES.distribution += [
     "policies-level4.json",
 ]
 
-FINAL_TARGET_FILES.defaults.pref += [
+# Pref files in defaults/pref/ need their own variable; FINAL_TARGET_FILES does not
+# install them there.
+JS_PREFERENCE_FILES += [
     "autoconfig.js",
 ]
 
