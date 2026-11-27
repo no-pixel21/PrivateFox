@@ -12,6 +12,9 @@ The most important ones:
 | `firefox.icns` | macOS: app icon |
 | `document.ico` / `document.icns` | icon for .html files |
 | `content/about-logo.png`, `content/about-logo@2x.png` | logo in the "About" window |
+| `wizWatermark.bmp` (164×314) | Windows installer: welcome and finish page |
+| `wizHeader.bmp`, `wizHeaderRTL.bmp` (150×57) | Windows installer: header on the other pages |
+| `disk.icns` | macOS: icon of the mounted .dmg |
 
 You'll find the full list after a first `./build.sh fetch prepare` in
 `work/firefox-<version>/browser/branding/privatefox/`.
