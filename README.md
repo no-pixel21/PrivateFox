@@ -25,7 +25,22 @@ Alles Einstellbare steht an zwei Stellen:
 - `scripts/levels.py`: uBlock-Listen, uBlock-Filter und Firefox-Richtlinien je Stufe
 - `overlay/browser/privatefox/privatefox.cfg`: Browser-Einstellungen je Stufe und der Schutz-Knopf
 
-## Voraussetzungen
+## Fertig gebaut herunterladen
+
+GitHub baut Private Fox automatisch für Windows (x64) und macOS (Apple Silicon):
+bei jeder Änderung am Build-Code, jeden Montag und auf Knopfdruck
+(**Actions → „Private Fox bauen“ → Run workflow**). Ein Durchlauf dauert mehrere Stunden.
+
+Die fertigen Dateien liegen danach unter **Releases** (rechts auf der Repo-Startseite):
+
+- **Windows:** `.exe` installieren oder `.zip` entpacken und `privatefox.exe` starten.
+  SmartScreen warnt, weil der Build nicht signiert ist: „Weitere Informationen → Trotzdem ausführen“.
+- **macOS:** `.dmg` öffnen, Private Fox nach „Programme“ ziehen, dann einmal im Terminal
+  `xattr -cr "/Applications/Private Fox.app"` ausführen. Sonst behauptet macOS, die App sei beschädigt.
+
+Selbst bauen musst du nur, wenn du etwas ausprobieren willst, ohne auf GitHub zu warten.
+
+## Voraussetzungen (nur zum Selbstbauen)
 
 Rechne mit **mindestens 40 GB freiem Platz** und **16 GB RAM**. Der erste Build dauert je nach
 Rechner 30 Minuten bis mehrere Stunden, spätere gehen schneller.

@@ -1,0 +1,150 @@
+name: Private Fox bauen
+
+# Läuft bei Änderungen am Build-Code, von Hand (Actions → "Private Fox bauen" → Run workflow)
+# und jeden Montag automatisch, damit Sicherheitsupdates von Firefox reinkommen.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Firefox-Version (leer = neueste)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths:
+      - "build.sh"
+      - "mozconfig"
+      - "FIREFOX_VERSION"
+      - "scripts/**"
+      - "overlay/**"
+      - "branding/**"
+      - ".github/workflows/build.yml"
+  schedule:
+    - cron: "17 3 * * 1"
+
+concurrency:
+  group: privatefox-build
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows (x64)
+    runs-on: windows-2022
+    timeout-minutes: 360
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    env:
+      MOZILLABUILD: 'C:\mozilla-build\'
+      PF_WORK_DIR: /c/pfwork
+      CHERE_INVOKING: "1"
+      MSYS2_PATH_TYPE: inherit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Freier Speicher
+        shell: pwsh
+        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Frei (GB)";e={[math]::Round($_.Free/1GB,1)}}
+
+      - name: MozillaBuild installieren
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuild-Setup.exe -OutFile MozillaBuild-Setup.exe
+          Start-Process .\MozillaBuild-Setup.exe -ArgumentList '/S' -Wait
+          if (-not (Test-Path 'C:\mozilla-build\msys2\usr\bin\bash.exe')) { throw "MozillaBuild nicht gefunden" }
+
+      - name: Firefox-Version festlegen
+        id: ver
+        shell: cmd
+        run: >-
+          C:\mozilla-build\msys2\usr\bin\bash.exe -lc
+          "export PATH=/c/mozilla-build/bin:/c/mozilla-build/python3:/c/mozilla-build/python3/Scripts:$PATH;
+          if [ -n '${{ inputs.version }}' ]; then echo '${{ inputs.version }}' > FIREFOX_VERSION; else ./build.sh latest; fi;
+          echo version=$(cat FIREFOX_VERSION) >> $(cygpath -u \"$GITHUB_OUTPUT\")"
+
+      - name: Bauen (dauert mehrere Stunden)
+        shell: cmd
+        run: >-
+          C:\mozilla-build\msys2\usr\bin\bash.exe -lc
+          "export PATH=/c/mozilla-build/bin:/c/mozilla-build/python3:/c/mozilla-build/python3/Scripts:$PATH;
+          ./build.sh all"
+
+      - name: Freier Speicher nach dem Build
+        if: always()
+        shell: pwsh
+        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Frei (GB)";e={[math]::Round($_.Free/1GB,1)}}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: privatefox-windows
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS (Apple Silicon)
+    runs-on: macos-15
+    timeout-minutes: 360
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Platz schaffen
+        run: |
+          df -h /
+          sudo rm -rf "${ANDROID_HOME:-/nonexistent}" ~/Library/Android /usr/local/share/dotnet ~/.dotnet /Users/runner/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - name: Firefox-Version festlegen
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then echo "${{ inputs.version }}" > FIREFOX_VERSION; else ./build.sh latest; fi
+          echo "version=$(cat FIREFOX_VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Bauen (dauert mehrere Stunden)
+        run: ./build.sh all
+
+      - name: Freier Speicher nach dem Build
+        if: always()
+        run: df -h /
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: privatefox-macos
+          path: out/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Release veröffentlichen
+    needs: [windows, macos]
+    if: ${{ !cancelled() && (needs.windows.result == 'success' || needs.macos.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Version
+        id: v
+        run: echo "version=${{ needs.windows.outputs.version || needs.macos.outputs.version }}" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.version }}-${{ github.run_number }}
+          name: Private Fox ${{ steps.v.outputs.version }}
+          files: dist/*
+          body: |
+            Private Fox auf Basis von Firefox ${{ steps.v.outputs.version }}.
+
+            **Windows:** `.exe` = Installer, `.zip` = portable Version (entpacken, `privatefox.exe` starten).
+            SmartScreen warnt, weil der Build nicht signiert ist: „Weitere Informationen → Trotzdem ausführen“.
+
+            **macOS (Apple Silicon):** `.dmg` öffnen, Private Fox in „Programme“ ziehen, dann einmal im Terminal:
+            `xattr -cr "/Applications/Private Fox.app"`. Sonst meldet macOS, die App sei beschädigt.
+
+            Windows: ${{ needs.windows.result }} · macOS: ${{ needs.macos.result }}
