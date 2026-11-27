@@ -4,6 +4,8 @@ A Firefox-based browser with a built-in ad and tracker blocker (uBlock Origin)
 and a **protection level from 0 to 4** that you switch with one click.
 No telemetry, no ads on the new tab page, no data collection.
 
+🌐 **Website:** <https://no-pixel21.github.io/PrivateFox/>
+
 ## ⬇️ Download
 
 ### **[→ Download the latest version](https://github.com/no-pixel21/PrivateFox/releases/latest)**

@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Private Fox – a browser with a blocking dial</title>
+<meta name="description" content="Private Fox is a Firefox-based browser with uBlock Origin built in and one control for how strict it is. No telemetry, no sponsored content.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 6.5v8.6C4 22.3 9.1 27.9 16 30c6.9-2.1 12-7.7 12-14.9V6.5Z' fill='%231d2246'/%3E%3Cpath d='m9 10 4 4h6l4-4v8l-7 6-7-6Z' fill='%23f28c28'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f3f5fa;
+    --paper: #ffffff;
+    --ink: #1d2246;
+    --muted: #59607a;
+    --line: #d8dcea;
+    --l0: #8a90a6;
+    --l1: #2fb67c;
+    --l2: #9fbf1f;
+    --l3: #f28c28;
+    --l4: #e5484d;
+    --level: var(--l2);
+    --display: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--level); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- header ---------- */
+  header.site {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 20px/1 var(--display); }
+  .brand svg { width: 30px; height: 30px; }
+  nav.links { display: flex; gap: 24px; font-size: 15px; }
+  nav.links a { text-decoration: none; color: var(--muted); }
+  nav.links a:hover { color: var(--ink); }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 56px; align-items: center; padding: 40px 0 88px;
+  }
+  .hero h1 {
+    font: 800 clamp(44px, 6.2vw, 76px)/0.98 var(--display);
+    letter-spacing: -0.03em; margin: 0 0 24px;
+  }
+  .hero p.lede { font-size: 19px; color: var(--muted); max-width: 30em; margin: 0 0 32px; }
+  .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--ink); color: #fff; text-decoration: none;
+    font: 600 17px/1 var(--body); padding: 16px 24px; border-radius: 14px;
+  }
+  .btn:hover { background: #2b3266; }
+  .btn svg { width: 18px; height: 18px; }
+  .cta .alt { font-size: 15px; color: var(--muted); }
+  .fineprint { margin-top: 18px; font-size: 14px; color: var(--muted); }
+
+  /* ---------- the dial demo ---------- */
+  .demo {
+    background: var(--paper); border-radius: 18px;
+    box-shadow: 0 1px 0 var(--line), 0 24px 60px -28px rgba(29, 34, 70, .35);
+    overflow: hidden;
+  }
+  .chrome {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; background: #e9ecf5; border-bottom: 1px solid var(--line);
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; background: #c9cee0; display: block; }
+  .url {
+    flex: 1; background: var(--paper); border-radius: 8px; padding: 6px 12px;
+    font: 13px/1.2 var(--body); color: var(--muted); white-space: nowrap; overflow: hidden;
+  }
+  .url b { color: var(--ink); font-weight: 600; }
+  .shield {
+    display: flex; align-items: center; gap: 6px;
+    font: 700 13px/1 var(--body); color: #fff; background: var(--level);
+    padding: 6px 9px; border-radius: 8px; transition: background .25s;
+  }
+  .shield .sr { font-weight: 500; opacity: .92; margin-left: 4px; }
+  .page { position: relative; padding: 22px 24px 26px; height: 440px; overflow: hidden; }
+  .masthead { font: 800 22px/1 Georgia, "Times New Roman", serif; letter-spacing: -0.01em; margin-bottom: 14px; }
+  .pgrid { display: grid; grid-template-columns: 1fr 150px; gap: 18px; transition: grid-template-columns .4s ease, gap .4s ease; }
+  .pgrid.noside { grid-template-columns: 1fr 0px; gap: 0; }
+  .side { overflow: hidden; }
+  .lines span { display: block; height: 9px; border-radius: 5px; background: #e4e7f0; margin: 0 0 9px; }
+  .lines span.h { height: 14px; width: 80%; background: #cfd4e3; margin-bottom: 14px; }
+  .lines span:nth-child(3n) { width: 92%; }
+  .lines span:nth-child(4n) { width: 70%; }
+  .slot { border-radius: 10px; font: 600 12px/1.3 var(--body); display: grid; place-items: center; text-align: center; overflow: hidden;
+    transition: opacity .3s, height .4s ease, margin .4s ease, border-width .4s; }
+  .ad { background: repeating-linear-gradient(-45deg, #fde7c8 0 10px, #fbdcb0 10px 20px); color: #9a5a12; height: 120px; margin-bottom: 12px; }
+  .ad.wide { height: 54px; margin: 6px 0 14px; }
+  .embed { background: #1d2246; color: #c9cee0; height: 92px; margin-top: 10px; }
+  .embed.blocked { background: #f0f2f8; color: var(--muted); border: 1px dashed var(--line); }
+  .scam { background: #fff1f1; color: #b4232a; border: 1px solid #f6c6c8; height: 60px; margin: 4px 0 12px; }
+  .cookie {
+    position: absolute; left: 16px; right: 16px; bottom: 16px;
+    background: var(--ink); color: #fff; border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 13px; transition: opacity .3s, transform .3s;
+  }
+  .cookie i { font-style: normal; background: #fff; color: var(--ink); border-radius: 8px; padding: 6px 10px; font-weight: 600; white-space: nowrap; }
+  .slot.gone { opacity: 0; height: 0; margin-top: 0; margin-bottom: 0; border-width: 0; }
+  .cookie.gone { opacity: 0; transform: translateY(12px); pointer-events: none; }
+  .hidden { display: none; }
+
+  .dial { padding: 20px 24px 22px; border-top: 1px solid var(--line); }
+  .dial-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+  .dial-top strong { font: 700 18px/1.2 var(--display); }
+  .dial-top output { font-size: 14px; color: var(--muted); text-align: right; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; margin: 0; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 10px; border-radius: 6px;
+    background: linear-gradient(90deg, var(--l0), var(--l1) 25%, var(--l2) 50%, var(--l3) 75%, var(--l4));
+  }
+  input[type=range]::-moz-range-track {
+    height: 10px; border-radius: 6px;
+    background: linear-gradient(90deg, var(--l0), var(--l1) 25%, var(--l2) 50%, var(--l3) 75%, var(--l4));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 28px; height: 28px; margin-top: -9px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--ink); box-shadow: 0 2px 6px rgba(29, 34, 70, .3);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 4px solid var(--ink);
+  }
+  .ticks { display: grid; grid-template-columns: repeat(5, 1fr); font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .ticks button {
+    font: inherit; color: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: center;
+  }
+  .ticks button:first-child { text-align: left; }
+  .ticks button:last-child { text-align: right; }
+  .ticks button[aria-pressed=true] { color: var(--ink); font-weight: 700; }
+  .demo-note { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 80px 0; border-top: 1px solid var(--line); }
+  section.block h2 {
+    font: 800 clamp(30px, 3.6vw, 44px)/1.05 var(--display); letter-spacing: -0.02em; margin: 0 0 14px;
+  }
+  section.block .intro { color: var(--muted); max-width: 36em; margin: 0 0 40px; font-size: 18px; }
+
+  /* levels as one scale */
+  .scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
+  .lvl { padding: 0 20px 0 0; }
+  .lvl .bar { height: 10px; background: var(--c); margin-bottom: 18px; }
+  .lvl:first-child .bar { border-radius: 6px 0 0 6px; }
+  .lvl:last-child .bar { border-radius: 0 6px 6px 0; }
+  .lvl h3 { font: 700 20px/1.2 var(--display); margin: 0 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .lvl h3 span { font: 700 14px/1 var(--body); color: var(--c); }
+  .lvl p { margin: 0 0 12px; font-size: 15px; }
+  .lvl .breaks { font-size: 14px; color: var(--muted); }
+  .default-tag { font: 600 12px/1 var(--body); background: var(--ink); color: #fff; padding: 4px 7px; border-radius: 6px; align-self: center; }
+
+  /* never list */
+  .never { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; list-style: none; padding: 0; margin: 0; max-width: 900px; }
+  .never li { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .never svg { flex: none; width: 22px; height: 22px; margin-top: 2px; }
+  .never b { display: block; }
+  .never span { color: var(--muted); font-size: 15px; }
+
+  /* install */
+  .tabs { display: inline-flex; background: #e6e9f3; border-radius: 12px; padding: 4px; margin-bottom: 28px; }
+  .tabs button {
+    font: 600 15px/1 var(--body); color: var(--muted); background: none; border: 0;
+    padding: 10px 18px; border-radius: 9px; cursor: pointer;
+  }
+  .tabs button[aria-selected=true] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(29, 34, 70, .15); }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; max-width: 680px; }
+  ol.steps li { counter-increment: s; position: relative; padding: 0 0 26px 52px; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: -2px;
+    width: 34px; height: 34px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink);
+    display: grid; place-items: center; font: 700 15px/1 var(--display);
+  }
+  ol.steps b { display: block; }
+  ol.steps span { color: var(--muted); }
+  .cmd {
+    display: flex; align-items: center; gap: 10px; margin-top: 10px;
+    background: var(--ink); color: #e8eaf4; border-radius: 10px; padding: 10px 10px 10px 14px; max-width: 520px;
+  }
+  .cmd code { font: 14px/1.4 var(--mono); flex: 1; overflow-x: auto; white-space: nowrap; }
+  .cmd button {
+    font: 600 13px/1 var(--body); background: #fff; color: var(--ink); border: 0; border-radius: 7px; padding: 8px 10px; cursor: pointer;
+  }
+
+  /* faq */
+  .faq { max-width: 760px; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary {
+    cursor: pointer; list-style: none; padding: 20px 36px 20px 0; position: relative;
+    font: 700 18px/1.35 var(--display);
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: ""; position: absolute; right: 6px; top: 26px; width: 10px; height: 10px;
+    border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); transition: transform .2s;
+  }
+  .faq details[open] summary::after { transform: rotate(-135deg); top: 31px; }
+  .faq details p { margin: 0 0 20px; color: var(--muted); max-width: 40em; }
+
+  /* closing + footer */
+  .closing { text-align: left; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
+  .closing h2 { margin: 0; }
+  footer.site { padding: 36px 0 56px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  footer.site a { color: var(--muted); }
+
+  @media (max-width: 920px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-bottom: 64px; }
+    .scale { grid-template-columns: 1fr; gap: 26px; }
+    .lvl { padding: 0 0 0 22px; position: relative; }
+    .lvl .bar { position: absolute; left: 0; top: 4px; bottom: 4px; width: 8px; height: auto; border-radius: 4px !important; margin: 0; }
+    .never { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    nav.links a.hide-sm { display: none; }
+    .pgrid { grid-template-columns: 1fr; }
+    .side { display: none; }
+    .page { height: 400px; }
+    section.block { padding: 60px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <a class="brand" href="#top" aria-label="Private Fox home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 6.5v8.6C4 22.3 9.1 27.9 16 30c6.9-2.1 12-7.7 12-14.9V6.5Z" fill="#1d2246"/><path d="m9 10 4 4h6l4-4v8l-7 6-7-6Z" fill="#f28c28"/><circle cx="13.3" cy="17" r="1.1" fill="#1d2246"/><circle cx="18.7" cy="17" r="1.1" fill="#1d2246"/></svg>
+      Private Fox
+    </a>
+    <nav class="links" aria-label="Main">
+      <a href="#levels" class="hide-sm">Levels</a>
+      <a href="#install" class="hide-sm">Install</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="https://github.com/no-pixel21/PrivateFox">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <h1>Turn the blocking up. Or down.</h1>
+        <p class="lede">Private Fox is a Firefox-based browser with uBlock Origin built in and a single control for how strict it is. No telemetry, no sponsored tiles, nothing phoning home.</p>
+        <div class="cta">
+          <a class="btn" id="download" href="https://github.com/no-pixel21/PrivateFox/releases/latest">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m0 0-4.5-4.5M10 13l4.5-4.5M3 17h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="download-label">Download Private Fox</span>
+          </a>
+          <a class="alt" href="https://github.com/no-pixel21/PrivateFox/releases/latest">All downloads</a>
+        </div>
+        <p class="fineprint" id="download-hint">Free and open source. For Windows 10/11 (64-bit) and Macs with Apple silicon.</p>
+      </div>
+
+      <figure class="demo" aria-label="Interactive example: how each protection level changes a web page" style="margin:0">
+        <div class="chrome">
+          <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="url" id="url">https://<b>daily-example.news</b>/article</div>
+          <div class="shield" id="shield"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1 2 3.2v4.3c0 3.6 2.6 6.4 6 7.5 3.4-1.1 6-3.9 6-7.5V3.2Z" fill="#fff"/></svg><span id="shield-n">0</span><span class="sr" id="shield-count-wrap"><span id="shield-count">0</span> blocked</span></div>
+        </div>
+        <div class="page" aria-hidden="true">
+          <div class="masthead">The Daily Example</div>
+          <div class="slot ad wide" data-off="1">Ad · Win a free cruise!</div>
+          <div class="pgrid">
+            <div class="lines">
+              <span class="h"></span><span></span><span></span><span></span><span></span><span></span>
+              <div class="slot scam" data-off="2">Your PC is infected! Click here</div>
+              <span></span><span></span><span></span><span></span>
+              <div class="slot embed" id="embed">▶ Video from another site</div>
+            </div>
+            <div class="side">
+              <div class="slot ad" data-off="1">Ad</div>
+              <div class="slot ad" data-off="1">Sponsored</div>
+            </div>
+          </div>
+          <div class="cookie" data-off="3">We value your privacy. We and our 847 partners… <i>Accept all</i></div>
+        </div>
+        <div class="dial">
+          <div class="dial-top">
+            <strong id="level-name">Off</strong>
+            <output id="level-desc" for="level">Ads, trackers and malware sites blocked</output>
+          </div>
+          <input type="range" id="level" min="0" max="4" step="1" value="0" aria-label="Protection level" aria-valuetext="0, Off">
+          <div class="ticks" id="ticks"></div>
+          <p class="demo-note">Illustration. Move the slider to see what each level removes.</p>
+        </div>
+      </figure>
+    </div>
+
+    <section class="block" id="levels">
+      <h2>Five levels, one click</h2>
+      <p class="intro">The shield in the toolbar shows your current level. Click it, pick another one, and Private Fox restarts with the new rules. If a site breaks, switch filtering off for just that site.</p>
+      <div class="scale">
+        <div class="lvl" style="--c: var(--l0)"><div class="bar"></div>
+          <h3><span>0</span>Off</h3>
+          <p>Nothing is blocked. Telemetry stays off anyway.</p>
+          <p class="breaks">Breaks: nothing.</p>
+        </div>
+        <div class="lvl" style="--c: var(--l1)"><div class="bar"></div>
+          <h3><span>1</span>Balanced</h3>
+          <p>Ads and trackers gone, strict tracking protection, no link prefetching.</p>
+          <p class="breaks">Breaks: almost never anything.</p>
+        </div>
+        <div class="lvl" style="--c: var(--l2)"><div class="bar"></div>
+          <h3><span>2</span>Strong <em class="default-tag" style="font-style:normal">Default</em></h3>
+          <p>Plus malware and phishing lists, encrypted DNS, your IP hidden in video calls, tracking parameters stripped from links.</p>
+          <p class="breaks">Breaks: rarely, an odd embedded login.</p>
+        </div>
+        <div class="lvl" style="--c: var(--l3)"><div class="bar"></div>
+          <h3><span>3</span>Extreme</h3>
+          <p>Plus no cookie banners, HTTPS only, fingerprinting protection, camera and microphone blocked.</p>
+          <p class="breaks">Breaks: some older or HTTP-only sites.</p>
+        </div>
+        <div class="lvl" style="--c: var(--l4)"><div class="bar"></div>
+          <h3><span>4</span>Paranoid</h3>
+          <p>Only the site you visit may load anything. WebGL and WebRTC off, cookies wiped on exit.</p>
+          <p class="breaks">Breaks: many sites. That's the point.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>What Private Fox never does</h2>
+      <p class="intro">These are switched off at every level, including level 0.</p>
+      <ul class="never">
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Send telemetry</b><span>Usage data, health reports and crash reports are locked off.</span></div></li>
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Run studies or experiments</b><span>No remote feature tests on your browser.</span></div></li>
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Show sponsored content</b><span>No sponsored shortcuts, stories or search suggestions.</span></div></li>
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Recommend add-ons or features</b><span>No pop-ups nudging you towards anything.</span></div></li>
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Ask for your location or notifications</b><span>Those prompts are blocked from level 1 up.</span></div></li>
+        <li><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="#1d2246"/><path d="m7 7 8 8m0-8-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><div><b>Track you on this website</b><span>This page loads nothing from other servers. No fonts, no analytics.</span></div></li>
+      </ul>
+    </section>
+
+    <section class="block" id="install">
+      <h2>Installing</h2>
+      <p class="intro">Private Fox isn't code-signed yet, so your system shows a warning the first time. Here's how to get past it.</p>
+      <div class="tabs" role="tablist" aria-label="Operating system">
+        <button role="tab" id="tab-win" aria-controls="panel-win" aria-selected="true">Windows</button>
+        <button role="tab" id="tab-mac" aria-controls="panel-mac" aria-selected="false" tabindex="-1">macOS</button>
+      </div>
+      <div role="tabpanel" id="panel-win" aria-labelledby="tab-win">
+        <ol class="steps">
+          <li><b>Download the installer</b><span>Pick the file ending in <code>win64.installer.exe</code> on the download page. Prefer no installation? Take the <code>.zip</code>, unzip it and run <code>privatefox.exe</code>.</span></li>
+          <li><b>Get past SmartScreen</b><span>Windows says “Windows protected your PC”. Click <em>More info</em>, then <em>Run anyway</em>.</span></li>
+          <li><b>Click through the installer</b><span>On first launch Private Fox installs uBlock Origin by itself. That takes a few seconds.</span></li>
+        </ol>
+      </div>
+      <div role="tabpanel" id="panel-mac" aria-labelledby="tab-mac" hidden>
+        <ol class="steps">
+          <li><b>Download the disk image</b><span>Pick the file ending in <code>mac.dmg</code>. It runs on Macs with Apple silicon (M1 and newer).</span></li>
+          <li><b>Drag Private Fox into Applications</b><span>Open the <code>.dmg</code> and drag the app onto the Applications folder.</span></li>
+          <li><b>Run this once in Terminal</b><span>Without it macOS calls the app “damaged”. It isn't, it's just not signed by Apple.</span>
+            <div class="cmd"><code id="xattr">xattr -cr "/Applications/Private Fox.app"</code><button type="button" id="copy">Copy</button></div>
+          </li>
+          <li><b>Open Private Fox</b><span>uBlock Origin installs itself on first launch.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="block" id="faq">
+      <h2>Questions</h2>
+      <div class="faq">
+        <details><summary>Is this just Firefox?</summary><p>It is Firefox's engine and code, built from Mozilla's official source, with our own settings, policies and the level switch added on top. Private Fox is not made or endorsed by Mozilla.</p></details>
+        <details><summary>Which ad blocker does it use?</summary><p>uBlock Origin, the open-source blocker that works best in Firefox. Private Fox installs it for you and sets its filter lists according to your level. You can still open its settings and add your own filters.</p></details>
+        <details><summary>How do updates work?</summary><p>Private Fox doesn't update itself. A new build with Firefox's latest security fixes is published every Monday. Download it and install it over the old version. Your bookmarks and settings stay. On GitHub, “Watch → Custom → Releases” sends you a notification for each new version.</p></details>
+        <details><summary>Why does my system warn me when I install it?</summary><p>Code-signing certificates cost money, and Private Fox doesn't have one yet. The warning means the file isn't signed. It doesn't mean something is wrong with it. The full source and build process are public on GitHub.</p></details>
+        <details><summary>Can I use it in my language?</summary><p>Private Fox ships in English. Open <code>about:addons</code>, search for your language pack (for example “German language pack”), install it and pick the language under Settings.</p></details>
+        <details><summary>Does Private Fox collect any data?</summary><p>No. Telemetry and studies are locked off, and the browser has no account system of its own. Sites you visit can of course still see what any site sees. The levels decide how much of that gets through.</p></details>
+        <details><summary>Is there a version for Intel Macs or Linux?</summary><p>Not yet. Builds currently cover Windows (64-bit) and Macs with Apple silicon.</p></details>
+      </div>
+    </section>
+
+    <section class="block closing">
+      <h2>Pick your level.</h2>
+      <a class="btn" href="https://github.com/no-pixel21/PrivateFox/releases/latest">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m0 0-4.5-4.5M10 13l4.5-4.5M3 17h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Private Fox
+      </a>
+    </section>
+  </main>
+
+  <footer class="site">
+    <span>Private Fox is based on Mozilla Firefox and licensed under the Mozilla Public License 2.0. It is not a Mozilla product.</span>
+    <span><a href="https://github.com/no-pixel21/PrivateFox">Source on GitHub</a></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // ---------- download button: name the visitor's system ----------
+  var ua = navigator.userAgent || "";
+  var label = document.getElementById("download-label");
+  var hint = document.getElementById("download-hint");
+  if (/Windows/i.test(ua)) {
+    label.textContent = "Download for Windows";
+    hint.textContent = "Free and open source. Windows 10/11, 64-bit. Pick the .exe installer on the next page.";
+  } else if (/Macintosh|Mac OS X/i.test(ua)) {
+    label.textContent = "Download for macOS";
+    hint.textContent = "Free and open source. Macs with Apple silicon (M1 and newer). Pick the .dmg on the next page.";
+    var preferMac = true;
+  }
+
+  // ---------- the dial ----------
+  var LEVELS = [
+    { name: "Off", desc: "Everything loads, ads and trackers included", count: 0, c: "--l0" },
+    { name: "Balanced", desc: "Ads and trackers blocked", count: 23, c: "--l1" },
+    { name: "Strong", desc: "Ads, trackers and malware sites blocked", count: 31, c: "--l2" },
+    { name: "Extreme", desc: "Plus cookie banners, HTTPS only", count: 38, c: "--l3" },
+    { name: "Paranoid", desc: "Only the site itself may load anything", count: 52, c: "--l4" }
+  ];
+  var range = document.getElementById("level");
+  var ticks = document.getElementById("ticks");
+  var root = document.documentElement;
+  var buttons = LEVELS.map(function (l, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = l.name;
+    b.addEventListener("click", function () { range.value = i; update(); });
+    ticks.appendChild(b);
+    return b;
+  });
+  var offEls = document.querySelectorAll("[data-off]");
+  var embed = document.getElementById("embed");
+
+  function update() {
+    var lvl = Number(range.value);
+    var L = LEVELS[lvl];
+    root.style.setProperty("--level", "var(" + L.c + ")");
+    document.getElementById("level-name").textContent = L.name;
+    document.getElementById("level-desc").textContent = L.desc;
+    document.getElementById("shield-n").textContent = lvl;
+    document.getElementById("shield-count").textContent = L.count;
+    range.setAttribute("aria-valuetext", lvl + ", " + L.name);
+    buttons.forEach(function (b, i) { b.setAttribute("aria-pressed", String(i === lvl)); });
+    offEls.forEach(function (el) {
+      el.classList.toggle("gone", lvl >= Number(el.getAttribute("data-off")));
+    });
+    document.querySelector(".pgrid").classList.toggle("noside", lvl >= 1);
+    var blocked = lvl >= 4;
+    embed.classList.toggle("blocked", blocked);
+    embed.textContent = blocked ? "Video from another site blocked" : "▶ Video from another site";
+  }
+  var touched = false;
+  range.addEventListener("input", function () { touched = true; update(); });
+  ticks.addEventListener("click", function () { touched = true; });
+  update();
+
+  // One orchestrated moment: after load, dial up from Off to the default level.
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    range.value = 2; update();
+  } else {
+    [1, 2].forEach(function (v, i) {
+      setTimeout(function () { if (!touched) { range.value = v; update(); } }, 1100 + i * 700);
+    });
+  }
+
+  // ---------- install tabs ----------
+  var tabs = { win: document.getElementById("tab-win"), mac: document.getElementById("tab-mac") };
+  function selectTab(key) {
+    Object.keys(tabs).forEach(function (k) {
+      var on = k === key;
+      tabs[k].setAttribute("aria-selected", String(on));
+      tabs[k].tabIndex = on ? 0 : -1;
+      document.getElementById("panel-" + k).hidden = !on;
+    });
+  }
+  Object.keys(tabs).forEach(function (k) {
+    tabs[k].addEventListener("click", function () { selectTab(k); });
+    tabs[k].addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        var next = k === "win" ? "mac" : "win";
+        selectTab(next);
+        tabs[next].focus();
+      }
+    });
+  });
+
+  if (preferMac) selectTab("mac");
+
+  // ---------- copy command ----------
+  document.getElementById("copy").addEventListener("click", function () {
+    var btn = this;
+    var text = document.getElementById("xattr").textContent;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
