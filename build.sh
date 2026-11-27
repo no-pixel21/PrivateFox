@@ -131,7 +131,12 @@ cmd_bootstrap() {
 cmd_build() {
   check_paths
   info "Building Private Fox $VERSION – takes 30 minutes to several hours depending on the machine …"
-  mach build
+  if [[ -n "${PF_JOBS:-}" ]]; then
+    info "Limiting to $PF_JOBS parallel jobs (PF_JOBS)"
+    mach build -j"$PF_JOBS"
+  else
+    mach build
+  fi
 }
 
 cmd_package() {
@@ -197,6 +202,7 @@ Commands:
 
 Environment variables:
   PF_WORK_DIR  work directory (default: ./work), no spaces!
+  PF_JOBS      max parallel compile jobs (default: all cores); lower it if you run out of RAM
   PYTHON       python command (default: python3, else python)
 EOF
 }
