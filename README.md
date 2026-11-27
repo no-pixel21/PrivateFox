@@ -1,134 +1,79 @@
 # 🦊 Private Fox
 
-Ein Firefox-Fork mit fest eingebautem **uBlock Origin**, gehärteten Einstellungen und einer
-**Schutzstufe von 0 bis 4**, die man mit einem Klick in der Symbolleiste umschaltet.
+A Firefox-based browser with a built-in ad and tracker blocker (uBlock Origin)
+and a **protection level from 0 to 4** that you switch with one click.
+No telemetry, no ads on the new tab page, no data collection.
 
-Das Repo enthält nur die Änderungen. Den Firefox-Quellcode (mehrere GB) lädt `build.sh`
-direkt von Mozilla und prüft dabei die SHA-512-Prüfsumme.
+## ⬇️ Download
 
-## Die Schutzstufen
+### **[→ Download the latest version](https://github.com/no-pixel21/PrivateFox/releases/latest)**
 
-| Stufe | Name | Was passiert |
-|---|---|---|
-| 0 | Aus | uBlock bleibt installiert, filtert aber nichts. Telemetrie ist trotzdem aus. |
-| 1 | Ausgewogen | uBlock mit EasyList, EasyPrivacy, EasyList Germany und uBlock-Filtern. Tracking-Schutz „Streng“, Global Privacy Control, keine Pings/Beacons, kein Vorabladen. |
-| 2 | **Stark** (Standard) | + Malware-Listen (URLhaus, Peter Lowe) · DNS-over-HTTPS über Quad9 mit Rückfall · WebRTC verrät die IP nicht · Tracking-Parameter werden aus Links entfernt · Referrer an Dritte gekürzt · Punycode sichtbar (gegen Phishing-Domains) · HTTPS bevorzugt |
-| 3 | Extrem | + Cookie-Banner- und Ärgernis-Listen · **nur HTTPS** · DoH ohne Rückfall · Fingerprinting-Schutz · kein Referrer an fremde Domains · Schriften/Plugins von Drittanbietern blockiert · Kamera/Mikro/Autoplay blockiert · kein Firefox-Konto, kein Formularverlauf |
-| 4 | Paranoid | + **alle Skripte und Frames von Drittanbietern blockiert** · `resistFingerprinting` mit Letterboxing · WebGL und WebRTC aus · nur Cookies der besuchten Seite · Cookies/Cache beim Beenden gelöscht |
+Pick the right file under "Assets":
 
-**Umschalten:** Schild-Knopf in der Symbolleiste anklicken, Stufe wählen, Private Fox startet neu.
-**Seite kaputt?** Im uBlock-Popup den großen Power-Knopf drücken. Dann wird diese Seite nicht
-gefiltert. Ab Stufe 3 kannst du dort im erweiterten Modus auch einzelne Drittanbieter erlauben.
+| System | File |
+|---|---|
+| **Windows** (64-bit) | `…win64.installer.exe` to install, or `…win64.zip` for the portable version |
+| **macOS** (Apple M1/M2/M3/M4) | `…mac.dmg` |
 
-Alles Einstellbare steht an zwei Stellen:
+> There is currently no build for Intel Macs.
 
-- `scripts/levels.py`: uBlock-Listen, uBlock-Filter und Firefox-Richtlinien je Stufe
-- `overlay/browser/privatefox/privatefox.cfg`: Browser-Einstellungen je Stufe und der Schutz-Knopf
-
-## Fertig gebaut herunterladen
-
-GitHub baut Private Fox automatisch für Windows (x64) und macOS (Apple Silicon):
-bei jeder Änderung am Build-Code, jeden Montag und auf Knopfdruck
-(**Actions → „Private Fox bauen“ → Run workflow**). Ein Durchlauf dauert mehrere Stunden.
-
-Die fertigen Dateien liegen danach unter **Releases** (rechts auf der Repo-Startseite):
-
-- **Windows:** `.exe` installieren oder `.zip` entpacken und `privatefox.exe` starten.
-  SmartScreen warnt, weil der Build nicht signiert ist: „Weitere Informationen → Trotzdem ausführen“.
-- **macOS:** `.dmg` öffnen, Private Fox nach „Programme“ ziehen, dann einmal im Terminal
-  `xattr -cr "/Applications/Private Fox.app"` ausführen. Sonst behauptet macOS, die App sei beschädigt.
-
-Selbst bauen musst du nur, wenn du etwas ausprobieren willst, ohne auf GitHub zu warten.
-
-## Voraussetzungen (nur zum Selbstbauen)
-
-Rechne mit **mindestens 40 GB freiem Platz** und **16 GB RAM**. Der erste Build dauert je nach
-Rechner 30 Minuten bis mehrere Stunden, spätere gehen schneller.
+## Installation
 
 ### Windows
 
-1. **MozillaBuild** installieren: <https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe>
-2. `C:\mozilla-build\start-shell.bat` starten. **Alle Befehle laufen in diesem Fenster.**
-3. Das Repo in einen Pfad **ohne Leerzeichen** klonen, z. B. `C:\src\privatefox`.
-4. Tipp: Den Ordner in Windows Defender als Ausnahme eintragen, das macht den Build deutlich schneller.
+1. Download the `.exe` and run it.
+2. Windows shows "Windows protected your PC" because Private Fox is not code-signed.
+   Click **More info → Run anyway**.
+3. Click through the installer. Done.
 
-Mozillas offizielle Anleitung, falls `bootstrap` etwas vermisst:
-<https://firefox-source-docs.mozilla.org/setup/windows_build.html>
+Portable version: unzip the `.zip` and run `privatefox.exe` inside the folder.
 
 ### macOS
 
-1. Xcode Command Line Tools: `xcode-select --install`. Falls `bootstrap` meckert, das volle Xcode aus dem App Store installieren.
-2. Python 3 ist danach vorhanden (`python3 --version`).
+1. Open the `.dmg` and drag **Private Fox** into your **Applications** folder.
+2. Open Terminal once and paste this command:
+   ```
+   xattr -cr "/Applications/Private Fox.app"
+   ```
+   Without this step macOS claims the app is "damaged". It isn't, it's just not signed by Apple.
+3. Start Private Fox as usual.
 
-Mozillas offizielle Anleitung: <https://firefox-source-docs.mozilla.org/setup/macos_build.html>
+On first launch Private Fox automatically installs uBlock Origin. This takes a few seconds.
 
-## Bauen
+## Choosing a protection level
 
-```bash
-git clone https://github.com/<dein-name>/privatefox.git
-cd privatefox
-./build.sh all
-```
+There's a **shield with a number** on the right side of the toolbar. Click it, pick a level,
+and Private Fox restarts.
 
-`all` macht nacheinander: Quellcode laden → Private Fox einbauen → Build-Werkzeuge installieren
-→ kompilieren → packen. Die fertigen Pakete landen in `out/`:
+| Level | Name | What it does |
+|---|---|---|
+| 0 | Off | Nothing is blocked (telemetry stays off anyway). |
+| 1 | Balanced | Ads and trackers gone, every site works. |
+| 2 | **Strong** (default) | Also blocks malware and phishing sites, encrypted DNS, hides your IP in video calls, strips tracking parameters from links. |
+| 3 | Extreme | Also removes cookie banners, HTTPS-only, fingerprinting protection, camera and microphone blocked. Some sites may misbehave. |
+| 4 | Paranoid | Blocks everything that doesn't come from the site you're visiting. Cookies are deleted on exit. Many sites will break. |
 
-- **Windows:** `privatefox-<version>.en-US.win64.zip` (portabel) und ein Installer `.exe`
-- **macOS:** `privatefox-<version>.en-US.mac.dmg`
+**A site doesn't work?** Click the uBlock icon (red shield) and hit the big blue power button.
+That turns filtering off for that one site only.
 
-Zum Ausprobieren ohne Packen: `./build.sh run`.
+## Language
 
-## Aktualisieren – wichtig!
+Private Fox ships in English. To use another language, install the matching
+language pack in Private Fox: `about:addons` → search for e.g. "German language pack",
+then pick the language under Settings → Language.
 
-Firefox bekommt alle paar Wochen ein neues Release und dazwischen Sicherheitsupdates.
-Private Fox hat **keine automatischen Updates**. Ein alter Build ist ein unsicherer Browser.
+## Updates
 
-```bash
-./build.sh update
-```
+Private Fox does **not update itself**. A new version with the latest Firefox security fixes
+is published automatically every Monday. Download it regularly and install it over the old one.
+Your bookmarks and settings are kept.
 
-Das trägt die neueste Firefox-Version ein und baut alles neu. Bricht `prepare` mit
-„Mozilla hat den Code geändert“ ab, hat sich eine Stelle im Firefox-Code verschoben, die wir patchen.
-Die Meldung sagt dir, welche Datei es ist.
+**Tip:** Click **Watch → Custom → Releases** at the top of this page and GitHub will notify you
+about every new version.
 
-## Wie es funktioniert
+---
 
-```
-build.sh                  lädt Firefox, ruft prepare_tree.py und mach auf
-scripts/prepare_tree.py   baut Private Fox in den Firefox-Quellcode ein
-scripts/levels.py         Richtlinien + uBlock-Konfiguration je Stufe
-overlay/browser/privatefox/
-  privatefox.cfg          Startskript: Einstellungen je Stufe + Schutz-Knopf
-  autoconfig.js           sorgt dafür, dass privatefox.cfg geladen wird
-  moz.build               liefert die Dateien mit aus
-branding/                 eigene Icons (optional)
-mozconfig                 Build-Optionen (Name, kein Updater, kein Crashreporter)
-```
+Want to change something or build it yourself? → [DEVELOPMENT.md](DEVELOPMENT.md)
 
-Die gewählte Stufe steht als Zahl in der Datei `privatefox-level` im Benutzer-App-Ordner
-(Windows: `%APPDATA%\Mozilla\PrivateFox`, macOS: `~/Library/Application Support/PrivateFox`).
-Beim Start lesen zwei Stellen diese Zahl:
-
-1. Die **Richtlinien-Engine** von Firefox. Sie ist so gepatcht, dass sie
-   `distribution/policies-level<N>.json` statt `policies.json` lädt. Darüber werden uBlock Origin
-   installiert und vorkonfiguriert sowie DoH, HTTPS-Only, Cookies und Berechtigungen gesetzt.
-2. Das **Startskript** `privatefox.cfg`. Es setzt die passenden `about:config`-Werte
-   und fügt den Schutz-Knopf ein.
-
-uBlock Origin und das deutsche Sprachpaket werden beim ersten Start automatisch geladen.
-Das Sprachpaket kommt passend zur Version direkt von Mozilla.
-
-## Bekannte Grenzen
-
-- **Noch nie gebaut:** Dieses Repo wurde ohne echten Firefox-Build erstellt. Rechne beim ersten
-  Durchlauf mit kleinen Anpassungen, vor allem im Branding und bei `package-manifest.in`.
-- **Nicht signiert:** macOS-Gatekeeper und Windows SmartScreen warnen. macOS: Rechtsklick → Öffnen.
-  Für echte Signaturen brauchst du ein Apple-Developer-Konto bzw. ein Code-Signing-Zertifikat.
-- **Name „Firefox“:** Er darf nicht im Produktnamen stehen. Die Dateinamen der Icons
-  (`firefox.ico`) sind nur technische Namen und unproblematisch.
-- **Sprache:** Gebaut wird die englische Grundversion, Deutsch kommt über das Sprachpaket.
-  Falls an einzelnen Stellen „Firefox“ statt „Private Fox“ erscheint, stammt das aus dem Sprachpaket.
-
-## Lizenz
-
-Firefox steht unter der Mozilla Public License 2.0, dieser Fork ebenso.
+Private Fox is based on Mozilla Firefox and, like Firefox, licensed under the Mozilla Public License 2.0.
+Private Fox is not a Mozilla product.

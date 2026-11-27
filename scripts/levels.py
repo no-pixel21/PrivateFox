@@ -1,19 +1,19 @@
-"""Private Fox – Definition der Schutzstufen 0–4.
+"""Private Fox – protection levels 0–4.
 
-Hieraus erzeugt prepare_tree.py die Dateien distribution/policies-level0.json … level4.json.
-Welche davon gilt, entscheidet beim Start die Datei "privatefox-level" im Benutzerordner
-(wird vom Schutz-Knopf in der Symbolleiste geschrieben).
+prepare_tree.py generates distribution/policies-level0.json … level4.json from this file.
+Which one applies is decided on startup by the file "privatefox-level" in the user app folder
+(written by the shield button in the toolbar).
 
-Doku der Richtlinien: https://mozilla.github.io/policy-templates/
-uBlock-Origin-Verwaltung: https://github.com/gorhill/uBlock/wiki/Deploying-uBlock-Origin
+Policy docs: https://mozilla.github.io/policy-templates/
+uBlock Origin admin settings: https://github.com/gorhill/uBlock/wiki/Deploying-uBlock-Origin
 """
 
 UBO_ID = "uBlock0@raymondhill.net"
 UBO_URL = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
 
-NAMES = ["Aus", "Ausgewogen", "Stark", "Extrem", "Paranoid"]
+NAMES = ["Off", "Balanced", "Strong", "Extreme", "Paranoid"]
 
-# uBlock-Origin-Filterlisten (interne uBO-Kennungen)
+# uBlock Origin filter lists (internal uBO list IDs)
 _BASE = [
     "user-filters",
     "ublock-filters",
@@ -34,7 +34,7 @@ _EXTREME = _STRONG + [
 ]
 UBO_LISTS = {0: ["user-filters"], 1: _BASE, 2: _STRONG, 3: _EXTREME, 4: _EXTREME}
 
-# Zusätzliche statische uBO-Filter. Pro Seite lassen sie sich im uBO-Popup wieder erlauben.
+# Extra static uBO filters. Can be allowed again per site in the uBO popup.
 UBO_FILTERS = {
     0: [],
     1: [],
@@ -61,13 +61,9 @@ def _ubo_settings(level: int) -> dict:
 
 
 def build_policies(level: int, version: str) -> dict:
-    """Komplette policies.json für eine Stufe."""
-    langpack_url = (
-        f"https://archive.mozilla.org/pub/firefox/releases/{version}/linux-x86_64/xpi/de.xpi"
-    )
-
+    """Complete policies.json for one level."""
     p = {
-        # --- immer: keine Datensammlung, keine Werbung, kein Mozilla-Kram ---
+        # --- always: no data collection, no ads, no Mozilla promos ---
         "DisableTelemetry": True,
         "DisableFirefoxStudies": True,
         "DisablePocket": True,
@@ -99,7 +95,6 @@ def build_policies(level: int, version: str) -> dict:
             "Locked": False,
         },
         "Homepage": {"URL": "https://duckduckgo.com/", "Locked": False},
-        "RequestedLocales": ["de"],
         "PasswordManagerEnabled": True,
         "ExtensionSettings": {
             "*": {"installation_mode": "allowed"},
@@ -108,14 +103,9 @@ def build_policies(level: int, version: str) -> dict:
                 "install_url": UBO_URL,
                 "private_browsing": True,
             },
-            # Deutsches Sprachpaket genau passend zur gebauten Version
-            "langpack-de@firefox.mozilla.org": {
-                "installation_mode": "normal_installed",
-                "install_url": langpack_url,
-            },
         },
         "3rdparty": {"Extensions": {UBO_ID: _ubo_settings(level)}},
-        # --- abhängig von der Stufe ---
+        # --- depends on the level ---
         "EnableTrackingProtection": {
             "Value": level >= 1,
             "Cryptomining": level >= 1,
@@ -143,7 +133,7 @@ def build_policies(level: int, version: str) -> dict:
         p["DNSOverHTTPS"] = {
             "Enabled": True,
             "ProviderURL": "https://dns.quad9.net/dns-query",
-            "Fallback": level < 3,  # ab Extrem kein Rückfall auf unverschlüsseltes DNS
+            "Fallback": level < 3,  # from Extreme on: no fallback to unencrypted DNS
             "Locked": False,
         }
 

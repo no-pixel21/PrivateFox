@@ -1,18 +1,18 @@
-# Eigene Icons
+# Custom icons
 
-Alles, was hier liegt, wird beim `./build.sh prepare` über `browser/branding/privatefox/`
-im Firefox-Quellcode kopiert. Dateinamen und Unterordner müssen genau wie dort heißen.
+Everything in this folder is copied over `browser/branding/privatefox/` in the Firefox source
+during `./build.sh prepare`. File names and subfolders must match exactly.
 
-Am wichtigsten:
+The most important ones:
 
-| Datei               | Wofür                              |
-|---------------------|------------------------------------|
-| `default16.png` … `default256.png` | Fenster- und Taskleisten-Icons (16, 22, 24, 32, 48, 64, 128, 256 px) |
-| `firefox.ico`       | Windows: Programm-Icon             |
-| `firefox.icns`      | macOS: App-Icon                    |
-| `document.ico` / `document.icns` | Icon für .html-Dateien |
-| `content/about-logo.png`, `content/about-logo@2x.png` | Logo im „Über“-Fenster |
+| File | Used for |
+|---|---|
+| `default16.png` … `default256.png` | window and taskbar icons (16, 22, 24, 32, 48, 64, 128, 256 px) |
+| `firefox.ico` | Windows: program icon |
+| `firefox.icns` | macOS: app icon |
+| `document.ico` / `document.icns` | icon for .html files |
+| `content/about-logo.png`, `content/about-logo@2x.png` | logo in the "About" window |
 
-Die vollständige Liste siehst du nach dem ersten `./build.sh fetch prepare` in
+You'll find the full list after a first `./build.sh fetch prepare` in
 `work/firefox-<version>/browser/branding/privatefox/`.
-Solange hier nichts liegt, nutzt Private Fox die neutralen Icons der Firefox-Vorlage „unofficial“.
+As long as this folder is empty, Private Fox uses the neutral icons of Firefox's "unofficial" template.

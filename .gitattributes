@@ -1,4 +1,4 @@
-# Skripte immer mit LF, sonst laufen sie in der MozillaBuild-Shell nicht
+# Always LF for scripts, otherwise they fail in the MozillaBuild shell
 *.sh   text eol=lf
 *.py   text eol=lf
 *.cfg  text eol=lf

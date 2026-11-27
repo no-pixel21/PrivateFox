@@ -1,12 +1,12 @@
-name: Private Fox bauen
+name: Build Private Fox
 
-# Läuft bei Änderungen am Build-Code, von Hand (Actions → "Private Fox bauen" → Run workflow)
-# und jeden Montag automatisch, damit Sicherheitsupdates von Firefox reinkommen.
+# Runs on changes to the build code, on demand (Actions → "Build Private Fox" → Run workflow)
+# and automatically every Monday to pick up Firefox security updates.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Firefox-Version (leer = neueste)"
+        description: "Firefox version (empty = latest)"
         required: false
         default: ""
   push:
@@ -40,18 +40,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Freier Speicher
+      - name: Free disk space
         shell: pwsh
-        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Frei (GB)";e={[math]::Round($_.Free/1GB,1)}}
+        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Free (GB)";e={[math]::Round($_.Free/1GB,1)}}
 
-      - name: MozillaBuild installieren
+      - name: Install MozillaBuild
         shell: pwsh
         run: |
           Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe -OutFile MozillaBuildSetup.exe
           Start-Process .\MozillaBuildSetup.exe -ArgumentList '/S' -Wait
-          if (-not (Test-Path 'C:\mozilla-build\msys2\usr\bin\bash.exe')) { throw "MozillaBuild nicht gefunden" }
+          if (-not (Test-Path 'C:\mozilla-build\msys2\usr\bin\bash.exe')) { throw "MozillaBuild not found" }
 
-      - name: Firefox-Version festlegen
+      - name: Determine Firefox version
         id: ver
         shell: cmd
         run: >-
@@ -60,17 +60,17 @@ jobs:
           if [ -n '${{ inputs.version }}' ]; then echo '${{ inputs.version }}' > FIREFOX_VERSION; else ./build.sh latest; fi;
           echo version=$(cat FIREFOX_VERSION) >> $(cygpath -u \"$GITHUB_OUTPUT\")"
 
-      - name: Bauen (dauert mehrere Stunden)
+      - name: Build (takes several hours)
         shell: cmd
         run: >-
           C:\mozilla-build\msys2\usr\bin\bash.exe -lc
           "export PATH=/c/mozilla-build/bin:/c/mozilla-build/python3:/c/mozilla-build/python3/Scripts:$PATH;
           ./build.sh all"
 
-      - name: Freier Speicher nach dem Build
+      - name: Free disk space after build
         if: always()
         shell: pwsh
-        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Frei (GB)";e={[math]::Round($_.Free/1GB,1)}}
+        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Free (GB)";e={[math]::Round($_.Free/1GB,1)}}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -88,22 +88,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Platz schaffen
+      - name: Free up disk space
         run: |
           df -h /
           sudo rm -rf "${ANDROID_HOME:-/nonexistent}" ~/Library/Android /usr/local/share/dotnet ~/.dotnet /Users/runner/hostedtoolcache/CodeQL || true
           df -h /
 
-      - name: Firefox-Version festlegen
+      - name: Determine Firefox version
         id: ver
         run: |
           if [ -n "${{ inputs.version }}" ]; then echo "${{ inputs.version }}" > FIREFOX_VERSION; else ./build.sh latest; fi
           echo "version=$(cat FIREFOX_VERSION)" >> "$GITHUB_OUTPUT"
 
-      - name: Bauen (dauert mehrere Stunden)
+      - name: Build (takes several hours)
         run: ./build.sh all
 
-      - name: Freier Speicher nach dem Build
+      - name: Free disk space after build
         if: always()
         run: df -h /
 
@@ -115,7 +115,7 @@ jobs:
           retention-days: 14
 
   release:
-    name: Release veröffentlichen
+    name: Publish release
     needs: [windows, macos]
     if: ${{ !cancelled() && (needs.windows.result == 'success' || needs.macos.result == 'success') }}
     runs-on: ubuntu-latest
@@ -135,12 +135,14 @@ jobs:
           name: Private Fox ${{ steps.v.outputs.version }}
           files: dist/*
           body: |
-            Private Fox auf Basis von Firefox ${{ steps.v.outputs.version }}.
+            Private Fox based on Firefox ${{ steps.v.outputs.version }}.
 
-            **Windows:** `.exe` = Installer, `.zip` = portable Version (entpacken, `privatefox.exe` starten).
-            SmartScreen warnt, weil der Build nicht signiert ist: „Weitere Informationen → Trotzdem ausführen“.
+            **Windows:** `.exe` = installer, `.zip` = portable version (unzip, run `privatefox.exe`).
+            SmartScreen warns because the build isn't code-signed: "More info → Run anyway".
 
-            **macOS (Apple Silicon):** `.dmg` öffnen, Private Fox in „Programme“ ziehen, dann einmal im Terminal:
-            `xattr -cr "/Applications/Private Fox.app"`. Sonst meldet macOS, die App sei beschädigt.
+            **macOS (Apple Silicon):** open the `.dmg`, drag Private Fox into Applications, then run once in Terminal:
+            `xattr -cr "/Applications/Private Fox.app"`. Otherwise macOS says the app is damaged.
+
+            Installation guide: https://github.com/no-pixel21/PrivateFox#installation
 
             Windows: ${{ needs.windows.result }} · macOS: ${{ needs.macos.result }}
