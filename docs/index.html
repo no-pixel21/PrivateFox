@@ -269,7 +269,7 @@
           </a>
           <a class="alt" href="https://github.com/no-pixel21/PrivateFox/releases/latest">All downloads</a>
         </div>
-        <p class="fineprint" id="download-hint">Free and open source. For Windows 10/11 (64-bit) and Macs with Apple silicon.</p>
+        <p class="fineprint" id="download-hint">Free and open source. For Windows 10/11 (64-bit). macOS is coming soon.</p>
       </div>
 
       <figure class="demo" aria-label="Interactive example: how each protection level changes a web page" style="margin:0">
@@ -367,6 +367,7 @@
         </ol>
       </div>
       <div role="tabpanel" id="panel-mac" aria-labelledby="tab-mac" hidden>
+        <p class="intro" style="margin-bottom:24px">The macOS version is coming soon. Once it's out, installing works like this:</p>
         <ol class="steps">
           <li><b>Download the disk image</b><span>Pick the file ending in <code>mac.dmg</code>. It runs on Macs with Apple silicon (M1 and newer).</span></li>
           <li><b>Drag Private Fox into Applications</b><span>Open the <code>.dmg</code> and drag the app onto the Applications folder.</span></li>
@@ -387,7 +388,7 @@
         <details><summary>Why does my system warn me when I install it?</summary><p>Code-signing certificates cost money, and Private Fox doesn't have one yet. The warning means the file isn't signed. It doesn't mean something is wrong with it. The full source and build process are public on GitHub.</p></details>
         <details><summary>Can I use it in my language?</summary><p>Private Fox ships in English. Open <code>about:addons</code>, search for your language pack (for example “German language pack”), install it and pick the language under Settings.</p></details>
         <details><summary>Does Private Fox collect any data?</summary><p>No. Telemetry and studies are locked off, and the browser has no account system of its own. Sites you visit can of course still see what any site sees. The levels decide how much of that gets through.</p></details>
-        <details><summary>Is there a version for Intel Macs or Linux?</summary><p>Not yet. Builds currently cover Windows (64-bit) and Macs with Apple silicon.</p></details>
+        <details><summary>Is there a version for macOS or Linux?</summary><p>Not yet. Builds currently cover Windows 10/11 (64-bit). A version for Macs with Apple silicon is coming soon, Linux is planned.</p></details>
       </div>
     </section>
 
@@ -416,8 +417,8 @@
     label.textContent = "Download for Windows";
     hint.textContent = "Free and open source. Windows 10/11, 64-bit. Pick the .exe installer on the next page.";
   } else if (/Macintosh|Mac OS X/i.test(ua)) {
-    label.textContent = "Download for macOS";
-    hint.textContent = "Free and open source. Macs with Apple silicon (M1 and newer). Pick the .dmg on the next page.";
+    label.textContent = "Download Private Fox";
+    hint.textContent = "The macOS version is coming soon. Right now Private Fox is available for Windows 10/11 (64-bit).";
     var preferMac = true;
   }
 
