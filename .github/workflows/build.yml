@@ -36,13 +36,16 @@ jobs:
       MOZILLABUILD: 'C:\mozilla-build\'
       PF_WORK_DIR: /c/pfwork
       CHERE_INVOKING: "1"
-      MSYS2_PATH_TYPE: inherit
     steps:
       - uses: actions/checkout@v4
 
       - name: Free disk space
         shell: pwsh
         run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Free (GB)";e={[math]::Round($_.Free/1GB,1)}}
+
+      - name: Disable Windows Defender real-time scanning (much faster build)
+        shell: pwsh
+        run: Set-MpPreference -DisableRealtimeMonitoring $true
 
       - name: Install MozillaBuild
         shell: pwsh
