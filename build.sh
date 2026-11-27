@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Private Fox – Build-Skript
-# Läuft auf macOS (Terminal) und Windows (MozillaBuild-Shell: C:\mozilla-build\start-shell.bat).
+# Private Fox – build script
+# Runs on macOS (Terminal) and Windows (MozillaBuild shell: C:\mozilla-build\start-shell.bat).
 #
-#   ./build.sh all        Quellcode holen, vorbereiten, Werkzeuge installieren, bauen, packen
-#   ./build.sh update     auf neueste Firefox-Version springen und alles neu bauen
-#   ./build.sh help       alle Befehle
+#   ./build.sh all        download source, prepare, install toolchains, build, package
+#   ./build.sh update     jump to the latest Firefox version and rebuild everything
+#   ./build.sh help       all commands
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ TARBALL="firefox-$VERSION.source.tar.xz"
 
 info() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[1;31mFEHLER:\033[0m %s\n' "$*" >&2; exit 1; }
+die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 case "$(uname -s)" in
   Darwin)               PLATFORM=mac ;;
@@ -28,7 +28,7 @@ case "$(uname -s)" in
   *)                    PLATFORM=unknown ;;
 esac
 
-need() { command -v "$1" >/dev/null 2>&1 || die "'$1' fehlt. Siehe README → Voraussetzungen."; }
+need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is missing. See DEVELOPMENT.md → Building locally."; }
 
 sha512_of() {
   if command -v sha512sum >/dev/null 2>&1; then
@@ -39,13 +39,13 @@ sha512_of() {
 }
 
 check_paths() {
-  [[ "$WORK_DIR" != *" "* ]] || die "Der Arbeitsordner enthält Leerzeichen: $WORK_DIR
-Firefox lässt sich so nicht bauen. Repo nach z. B. C:/src/privatefox bzw. ~/src/privatefox verschieben
-oder PF_WORK_DIR auf einen Pfad ohne Leerzeichen setzen."
+  [[ "$WORK_DIR" != *" "* ]] || die "The work directory contains spaces: $WORK_DIR
+Firefox can't be built there. Move the repo to e.g. C:/src/privatefox or ~/src/privatefox,
+or set PF_WORK_DIR to a path without spaces."
 }
 
 need_src() {
-  [[ -d "$SRC_DIR" ]] || die "Kein Quellcode für $VERSION gefunden. Erst './build.sh fetch' ausführen."
+  [[ -d "$SRC_DIR" ]] || die "No source found for $VERSION. Run './build.sh fetch' first."
 }
 
 mach() {
@@ -53,17 +53,17 @@ mach() {
   (cd "$SRC_DIR" && ./mach "$@")
 }
 
-# ---------------------------------------------------------------- Befehle
+# ---------------------------------------------------------------- commands
 
 cmd_latest() {
   need curl
-  info "Frage neueste Firefox-Version bei Mozilla ab …"
+  info "Asking Mozilla for the latest Firefox version …"
   local latest
   latest="$(curl -fsSL https://product-details.mozilla.org/1.0/firefox_versions.json \
     | "$PYTHON" -c 'import json,sys; print(json.load(sys.stdin)["LATEST_FIREFOX_VERSION"])')"
-  [[ -n "$latest" ]] || die "Version konnte nicht ermittelt werden."
+  [[ -n "$latest" ]] || die "Could not determine the version."
   if [[ "$latest" == "$VERSION" ]]; then
-    info "Schon aktuell: $VERSION"
+    info "Already up to date: $VERSION"
   else
     echo "$latest" > "$REPO_DIR/FIREFOX_VERSION"
     info "FIREFOX_VERSION: $VERSION → $latest"
@@ -74,56 +74,56 @@ cmd_fetch() {
   need curl; need tar; check_paths
   mkdir -p "$WORK_DIR"
   if [[ -d "$SRC_DIR" ]]; then
-    info "Quellcode für $VERSION ist schon entpackt: $SRC_DIR"
+    info "Source for $VERSION is already unpacked: $SRC_DIR"
     return
   fi
 
   if [[ ! -f "$WORK_DIR/$TARBALL" ]]; then
-    info "Lade Firefox $VERSION Quellcode (ca. 600 MB) …"
+    info "Downloading Firefox $VERSION source (about 600 MB) …"
     curl -fL --retry 3 -o "$WORK_DIR/$TARBALL.part" "$ARCHIVE_URL/source/$TARBALL"
     mv "$WORK_DIR/$TARBALL.part" "$WORK_DIR/$TARBALL"
   fi
 
-  info "Prüfe SHA-512-Prüfsumme …"
+  info "Verifying SHA-512 checksum …"
   curl -fsSL -o "$WORK_DIR/SHA512SUMS-$VERSION" "$ARCHIVE_URL/SHA512SUMS"
   local expected actual
   expected="$(awk -v f="source/$TARBALL" '$2 == f {print $1}' "$WORK_DIR/SHA512SUMS-$VERSION")"
-  [[ -n "$expected" ]] || die "Keine Prüfsumme für $TARBALL in SHA512SUMS gefunden."
+  [[ -n "$expected" ]] || die "No checksum for $TARBALL found in SHA512SUMS."
   actual="$(sha512_of "$WORK_DIR/$TARBALL")"
   if [[ "$expected" != "$actual" ]]; then
     rm -f "$WORK_DIR/$TARBALL"
-    die "Prüfsumme stimmt NICHT. Download gelöscht, bitte erneut versuchen."
+    die "Checksum does NOT match. Download deleted, please try again."
   fi
-  info "Prüfsumme ok."
+  info "Checksum ok."
 
-  info "Entpacke (dauert ein paar Minuten) …"
+  info "Unpacking (takes a few minutes) …"
   tar -xJf "$WORK_DIR/$TARBALL" -C "$WORK_DIR"
-  [[ -d "$SRC_DIR" ]] || die "Entpackt, aber $SRC_DIR existiert nicht. Ordnername in $WORK_DIR prüfen."
-  info "Quellcode liegt in $SRC_DIR"
+  [[ -d "$SRC_DIR" ]] || die "Unpacked, but $SRC_DIR doesn't exist. Check the folder name in $WORK_DIR."
+  info "Source is in $SRC_DIR"
 }
 
 cmd_prepare() {
   need "$PYTHON"; need_src
-  info "Baue Private Fox in den Firefox-Quellcode ein …"
+  info "Applying Private Fox to the Firefox source …"
   "$PYTHON" "$REPO_DIR/scripts/prepare_tree.py" --src "$SRC_DIR" --repo "$REPO_DIR" --version "$VERSION"
 }
 
 cmd_bootstrap() {
-  info "Installiere Build-Werkzeuge (Rust, Clang, SDKs …) – nur beim ersten Mal nötig …"
+  info "Installing build toolchains (Rust, Clang, SDKs …) – only needed the first time …"
   mach --no-interactive bootstrap --application-choice=browser
 }
 
 cmd_build() {
   check_paths
-  info "Baue Private Fox $VERSION – das dauert je nach Rechner 30 Minuten bis mehrere Stunden …"
+  info "Building Private Fox $VERSION – takes 30 minutes to several hours depending on the machine …"
   mach build
 }
 
 cmd_package() {
-  info "Packe Private Fox …"
+  info "Packaging Private Fox …"
   mach package
   if [[ "$PLATFORM" == win ]]; then
-    info "Baue Windows-Installer …"
+    info "Building Windows installer …"
     mach build installer
   fi
   mkdir -p "$OUT_DIR"
@@ -136,7 +136,7 @@ cmd_package() {
     found=1
   done
   shopt -u nullglob
-  [[ $found -eq 1 ]] || warn "Keine Pakete gefunden. Inhalt von $dist prüfen."
+  [[ $found -eq 1 ]] || warn "No packages found. Check the contents of $dist."
 }
 
 cmd_run() {
@@ -145,7 +145,7 @@ cmd_run() {
 
 cmd_clean() {
   need_src
-  info "Lösche Build-Ordner (Quellcode bleibt) …"
+  info "Deleting build directory (source stays) …"
   rm -rf "$SRC_DIR/obj-privatefox"
 }
 
@@ -155,34 +155,34 @@ cmd_all() {
   cmd_bootstrap
   cmd_build
   cmd_package
-  info "Fertig. Pakete liegen in $OUT_DIR"
+  info "Done. Packages are in $OUT_DIR"
 }
 
 cmd_update() {
   cmd_latest
-  # Mit der neuen Version neu starten, damit alle Pfade stimmen
+  # Restart with the new version so all paths are right
   exec "$REPO_DIR/build.sh" all
 }
 
 usage() {
   cat <<EOF
-Private Fox – Build-Skript (Firefox $VERSION, Plattform: $PLATFORM)
+Private Fox – build script (Firefox $VERSION, platform: $PLATFORM)
 
-Befehle:
+Commands:
   all        fetch + prepare + bootstrap + build + package
-  update     neueste Firefox-Version eintragen und 'all' ausführen
-  latest     nur FIREFOX_VERSION auf die neueste Version setzen
-  fetch      Firefox-Quellcode laden, Prüfsumme checken, entpacken
-  prepare    Private-Fox-Änderungen einbauen (beliebig oft wiederholbar)
-  bootstrap  Build-Werkzeuge installieren (einmalig)
-  build      kompilieren
-  package    .dmg (macOS) bzw. .zip + Installer (Windows) nach out/ legen
-  run        frisch gebauten Browser starten
-  clean      Build-Ordner löschen
+  update     set the latest Firefox version and run 'all'
+  latest     only set FIREFOX_VERSION to the latest version
+  fetch      download Firefox source, verify checksum, unpack
+  prepare    apply Private Fox changes (safe to repeat)
+  bootstrap  install build toolchains (once)
+  build      compile
+  package    put .dmg (macOS) or .zip + installer (Windows) into out/
+  run        start the freshly built browser
+  clean      delete the build directory
 
-Umgebungsvariablen:
-  PF_WORK_DIR  Arbeitsordner (Standard: ./work), keine Leerzeichen!
-  PYTHON       Python-Befehl (Standard: python3)
+Environment variables:
+  PF_WORK_DIR  work directory (default: ./work), no spaces!
+  PYTHON       python command (default: python3, else python)
 EOF
 }
 

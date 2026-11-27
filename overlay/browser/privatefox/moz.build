@@ -1,5 +1,5 @@
 # -*- Mode: python -*-
-# Private Fox: Richtlinien, Autoconfig und Startskript mit ausliefern.
+# Private Fox: ship policies, autoconfig and startup script.
 
 FINAL_TARGET_FILES.distribution += [
     "policies-level0.json",
