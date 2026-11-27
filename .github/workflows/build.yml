@@ -22,10 +22,6 @@ on:
   schedule:
     - cron: "17 3 * * 1"
 
-concurrency:
-  group: privatefox-build
-  cancel-in-progress: false
-
 permissions:
   contents: write
 
@@ -51,8 +47,8 @@ jobs:
       - name: MozillaBuild installieren
         shell: pwsh
         run: |
-          Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuild-Setup.exe -OutFile MozillaBuild-Setup.exe
-          Start-Process .\MozillaBuild-Setup.exe -ArgumentList '/S' -Wait
+          Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe -OutFile MozillaBuildSetup.exe
+          Start-Process .\MozillaBuildSetup.exe -ArgumentList '/S' -Wait
           if (-not (Test-Path 'C:\mozilla-build\msys2\usr\bin\bash.exe')) { throw "MozillaBuild nicht gefunden" }
 
       - name: Firefox-Version festlegen

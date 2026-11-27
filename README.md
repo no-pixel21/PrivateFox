@@ -47,7 +47,7 @@ Rechner 30 Minuten bis mehrere Stunden, spätere gehen schneller.
 
 ### Windows
 
-1. **MozillaBuild** installieren: <https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuild-Setup.exe>
+1. **MozillaBuild** installieren: <https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe>
 2. `C:\mozilla-build\start-shell.bat` starten. **Alle Befehle laufen in diesem Fenster.**
 3. Das Repo in einen Pfad **ohne Leerzeichen** klonen, z. B. `C:\src\privatefox`.
 4. Tipp: Den Ordner in Windows Defender als Ausnahme eintragen, das macht den Build deutlich schneller.
