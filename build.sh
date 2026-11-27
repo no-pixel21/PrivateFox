@@ -143,8 +143,7 @@ cmd_package() {
   info "Packaging Private Fox …"
   mach package
   if [[ "$PLATFORM" == win ]]; then
-    info "Building Windows installer …"
-    mach build installer
+    build_windows_installer || warn "Windows installer could not be built – the portable .zip is still fine."
   fi
   mkdir -p "$OUT_DIR"
   local dist="$SRC_DIR/obj-privatefox/dist"
@@ -157,6 +156,17 @@ cmd_package() {
   done
   shopt -u nullglob
   [[ $found -eq 1 ]] || warn "No packages found. Check the contents of $dist."
+}
+
+build_windows_installer() {
+  info "Building Windows installer …"
+  local obj="$SRC_DIR/obj-privatefox"
+  local make="${MOZBUILD_STATE_PATH:-$HOME/.mozbuild}/mozmake/mozmake.exe"
+  # Older trees: top-level 'installer' target
+  if mach build installer; then return 0; fi
+  # Newer trees: the target lives in browser/installer (packager.mk)
+  if [[ -x "$make" ]] && "$make" -C "$obj/browser/installer" installer; then return 0; fi
+  return 1
 }
 
 cmd_run() {
