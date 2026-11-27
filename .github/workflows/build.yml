@@ -9,6 +9,11 @@ on:
         description: "Firefox version (empty = latest)"
         required: false
         default: ""
+      macos:
+        description: "Also build macOS (GitHub's macOS runners are often unavailable)"
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
     paths:
@@ -91,6 +96,8 @@ jobs:
 
   macos:
     name: macOS (Apple Silicon)
+    # Off for now: only when started by hand with "Also build macOS" ticked.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.macos }}
     runs-on: macos-15
     timeout-minutes: 360
     outputs:
@@ -127,7 +134,7 @@ jobs:
   release:
     name: Publish release
     needs: [windows, macos]
-    if: ${{ !cancelled() && (needs.windows.result == 'success' || needs.macos.result == 'success') }}
+    if: ${{ always() && (needs.windows.result == 'success' || needs.macos.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -150,7 +157,7 @@ jobs:
             **Windows:** `.exe` = installer, `.zip` = portable version (unzip, run `privatefox.exe`).
             SmartScreen warns because the build isn't code-signed: "More info → Run anyway".
 
-            **macOS (Apple Silicon):** open the `.dmg`, drag Private Fox into Applications, then run once in Terminal:
+            **macOS (Apple Silicon), when included:** open the `.dmg`, drag Private Fox into Applications, then run once in Terminal:
             `xattr -cr "/Applications/Private Fox.app"`. Otherwise macOS says the app is damaged.
 
             Installation guide: https://github.com/no-pixel21/PrivateFox#installation

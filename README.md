@@ -15,9 +15,9 @@ Pick the right file under "Assets":
 | System | File |
 |---|---|
 | **Windows** (64-bit) | `…win64.installer.exe` to install, or `…win64.zip` for the portable version |
-| **macOS** (Apple M1/M2/M3/M4) | `…mac.dmg` |
+| **macOS** (Apple M1/M2/M3/M4) | coming soon |
 
-> There is currently no build for Intel Macs.
+> The macOS version is coming soon. There will be no build for Intel Macs for now.
 
 ## Installation
 
@@ -30,7 +30,7 @@ Pick the right file under "Assets":
 
 Portable version: unzip the `.zip` and run `privatefox.exe` inside the folder.
 
-### macOS
+### macOS (coming soon)
 
 1. Open the `.dmg` and drag **Private Fox** into your **Applications** folder.
 2. Open Terminal once and paste this command:
