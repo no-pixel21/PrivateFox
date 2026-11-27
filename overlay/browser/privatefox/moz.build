@@ -1,6 +1,11 @@
 # -*- Mode: python -*-
 # Private Fox: ship policies, autoconfig and startup script.
 
+# browser/moz.build exports DIST_SUBDIR = "browser", which would put these files into
+# <app>/browser/. Firefox reads distribution/, defaults/pref/ and the autoconfig file from
+# the application root (next to the executable; Contents/Resources on macOS), so install there.
+FINAL_TARGET = "dist/bin"
+
 FINAL_TARGET_FILES.distribution += [
     "policies-level0.json",
     "policies-level1.json",
