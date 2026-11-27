@@ -43,6 +43,13 @@ jobs:
         shell: pwsh
         run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n="Free (GB)";e={[math]::Round($_.Free/1GB,1)}}
 
+      - name: Enlarge the page file (the Rust/C++ build needs more than 16 GB RAM)
+        uses: al-cheb/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 16GB
+          maximum-size: 40GB
+          disk-root: "D:"
+
       - name: Disable Windows Defender real-time scanning (much faster build)
         shell: pwsh
         run: Set-MpPreference -DisableRealtimeMonitoring $true
