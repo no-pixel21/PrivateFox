@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d3470"/>
+      <stop offset="1" stop-color="#171b3a"/>
+    </linearGradient>
+    <linearGradient id="fx" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9d3d"/>
+      <stop offset="1" stop-color="#ec7a1c"/>
+    </linearGradient>
+  </defs>
+  <!-- shield -->
+  <path d="M256 24 66 90v146c0 124 80 214 190 252 110-38 190-128 190-252V90Z" fill="url(#sh)"/>
+  <path d="M256 24 66 90v146c0 124 80 214 190 252 110-38 190-128 190-252V90Z" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="10"/>
+  <!-- fox head -->
+  <path d="M138 150 202 222H310L374 150V292L256 404 138 292Z" fill="url(#fx)"/>
+  <!-- inner ears -->
+  <path d="M158 196 188 230 158 254Z" fill="#b8520f" opacity=".55"/>
+  <path d="M354 196 324 230 354 254Z" fill="#b8520f" opacity=".55"/>
+  <!-- white muzzle -->
+  <path d="M138 292 204 284 256 336 308 284 374 292 256 404Z" fill="#fff4e8"/>
+  <!-- eyes + nose -->
+  <ellipse cx="212" cy="266" rx="15" ry="18" fill="#171b3a"/>
+  <ellipse cx="300" cy="266" rx="15" ry="18" fill="#171b3a"/>
+  <path d="M238 366h36l-18 22Z" fill="#171b3a"/>
+</svg>
