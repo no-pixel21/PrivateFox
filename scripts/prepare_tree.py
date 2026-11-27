@@ -75,9 +75,38 @@ def extend_package_manifest(src: Path) -> None:
         return
     lines = [f"\n; {MARK}"]
     lines += [f"@RESPATH@/distribution/policies-level{n}.json" for n in range(LEVEL_COUNT)]
-    lines += ["@RESPATH@/defaults/pref/autoconfig.js", "@RESPATH@/privatefox.cfg", ""]
+    lines += ["@RESPATH@/privatefox.cfg", ""]
     write(pm, text + "\n".join(lines))
     info("package-manifest.in: added files for the installer")
+
+
+AUTOCONFIG_MARK = "// Private Fox: load privatefox.cfg"
+AUTOCONFIG_PREFS = f"""
+{AUTOCONFIG_MARK} on startup (with full privileges)
+pref("general.config.filename", "privatefox.cfg");
+pref("general.config.obscure_value", 0);
+pref("general.config.sandbox_enabled", false);
+"""
+
+
+def add_autoconfig_prefs(src: Path) -> None:
+    # Appended to Firefox's own default prefs instead of shipping a separate
+    # defaults/pref/autoconfig.js: those files are always packaged and loaded early.
+    candidates = [
+        src / "browser" / "app" / "profile" / "firefox.js",
+        src / "modules" / "libpref" / "init" / "all.js",
+    ]
+    for f in candidates:
+        if f.exists():
+            text = read(f)
+            if AUTOCONFIG_MARK in text:
+                info(f"Autoconfig prefs: already in {f.relative_to(src)}")
+                return
+            write(f, text.rstrip("\n") + "\n" + AUTOCONFIG_PREFS)
+            info(f"Autoconfig prefs: appended to {f.relative_to(src)}")
+            return
+    die("Neither browser/app/profile/firefox.js nor modules/libpref/init/all.js found. "
+        "Mozilla moved the default prefs; update add_autoconfig_prefs in scripts/prepare_tree.py.")
 
 
 # ------------------------------------------------------------------ 2. Policies per level
@@ -202,6 +231,7 @@ def main() -> None:
     install_overlay(src, repo, a.version)
     register_dir(src)
     extend_package_manifest(src)
+    add_autoconfig_prefs(src)
     patch_policies_loader(src)
     setup_branding(src, repo)
     copy_mozconfig(src, repo)

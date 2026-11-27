@@ -23,7 +23,6 @@ scripts/prepare_tree.py       applies Private Fox to the Firefox source tree
 scripts/levels.py             policies + uBlock configuration per level
 overlay/browser/privatefox/
   privatefox.cfg              startup script: prefs per level + shield button
-  autoconfig.js               makes Firefox load privatefox.cfg
   moz.build                   ships the files with the build
 branding/                     custom icons (see branding/README.md)
 mozconfig                     build options (name, no updater, no crash reporter)
@@ -43,7 +42,8 @@ Two places read it on startup:
    instead of `policies.json`. This installs and configures uBlock Origin and sets DoH,
    HTTPS-Only, cookie behavior and permissions.
 2. The **startup script** `privatefox.cfg`. It sets the matching about:config values
-   and adds the shield button.
+   and adds the shield button. `prepare_tree.py` appends the `general.config.*` prefs that
+   load it to Firefox's default prefs (`browser/app/profile/firefox.js`).
 
 The Firefox source code is not part of this repo. `build.sh` downloads it straight from Mozilla
 and verifies the SHA-512 checksum. If `prepare` aborts with "Mozilla changed the code", a spot
