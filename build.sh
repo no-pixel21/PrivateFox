@@ -38,6 +38,21 @@ sha512_of() {
   fi
 }
 
+extract_tarball() {
+  if [[ "$PLATFORM" == win ]]; then
+    # On Windows, tar has to fork xz, which MSYS2 does unreliably. Python extracts without forking.
+    "$PYTHON" - "$1" "$2" <<'PYEOF'
+import sys, tarfile
+src, dest = sys.argv[1], sys.argv[2]
+kwargs = {"filter": "fully_trusted"} if hasattr(tarfile, "fully_trusted_filter") else {}
+with tarfile.open(src, "r:xz") as t:
+    t.extractall(dest, **kwargs)
+PYEOF
+  else
+    tar -xJf "$1" -C "$2"
+  fi
+}
+
 check_paths() {
   [[ "$WORK_DIR" != *" "* ]] || die "The work directory contains spaces: $WORK_DIR
 Firefox can't be built there. Move the repo to e.g. C:/src/privatefox or ~/src/privatefox,
@@ -97,7 +112,7 @@ cmd_fetch() {
   info "Checksum ok."
 
   info "Unpacking (takes a few minutes) …"
-  tar -xJf "$WORK_DIR/$TARBALL" -C "$WORK_DIR"
+  extract_tarball "$WORK_DIR/$TARBALL" "$WORK_DIR"
   [[ -d "$SRC_DIR" ]] || die "Unpacked, but $SRC_DIR doesn't exist. Check the folder name in $WORK_DIR."
   info "Source is in $SRC_DIR"
 }
