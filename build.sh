@@ -11,7 +11,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="${PF_WORK_DIR:-$REPO_DIR/work}"
 OUT_DIR="$REPO_DIR/out"
-PYTHON="${PYTHON:-python3}"
+PYTHON="${PYTHON:-$(command -v python3 || command -v python || echo python3)}"
 VERSION="$(tr -d ' \r\n' < "$REPO_DIR/FIREFOX_VERSION")"
 SRC_DIR="$WORK_DIR/firefox-$VERSION"
 ARCHIVE_URL="https://archive.mozilla.org/pub/firefox/releases/$VERSION"
