@@ -81,13 +81,20 @@ def build_policies(level: int, version: str) -> dict:
             "MoreFromMozilla": False,
             "Locked": False,
         },
+        # New tab: just the logo and the search box. No shortcuts (bookmarks are on the
+        # bookmarks bar instead), no stories, no highlights, no sponsored anything.
         "FirefoxHome": {
+            "Search": True,
+            "TopSites": False,
             "SponsoredTopSites": False,
-            "SponsoredPocket": False,
+            "Highlights": False,
             "Pocket": False,
+            "SponsoredPocket": False,
             "Snippets": False,
             "Locked": False,
         },
+        # No Firefox account / sync button and no sign-in prompts at any level.
+        "DisableFirefoxAccounts": True,
         "FirefoxSuggest": {
             "WebSuggestions": False,
             "SponsoredSuggestions": False,
@@ -95,7 +102,6 @@ def build_policies(level: int, version: str) -> dict:
             "Locked": False,
         },
         "Homepage": {"URL": "https://duckduckgo.com/", "Locked": False},
-        "PasswordManagerEnabled": True,
         "ExtensionSettings": {
             "*": {"installation_mode": "allowed"},
             UBO_ID: {
@@ -126,7 +132,6 @@ def build_policies(level: int, version: str) -> dict:
         },
         "HttpsOnlyMode": "force_enabled" if level >= 3 else ("enabled" if level >= 2 else "allowed"),
         "DisableFormHistory": level >= 3,
-        "DisableFirefoxAccounts": level >= 3,
     }
 
     if level >= 2:

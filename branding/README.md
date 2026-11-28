@@ -12,6 +12,10 @@ The most important ones:
 | `firefox.icns` | macOS: app icon |
 | `document.ico` / `document.icns` | icon for .html files |
 | `content/about-logo.png`, `content/about-logo@2x.png` | logo in the "About" window |
+| `content/about-logo.svg` | logo in the "About" window and on new tabs (preferred over the PNG) |
+| `content/about-wordmark.svg` | "Private Fox" lettering in the About window |
+| `content/firefox-wordmark.svg` | lettering next to the logo on new tabs – intentionally empty, so only the logo shows |
+| `pbmode.ico`, `PrivateBrowsing_70/150.png`, `content/about-logo-private*.png` | private browsing window icon and tiles |
 | `wizWatermark.bmp` (164×314) | Windows installer: welcome and finish page |
 | `wizHeader.bmp`, `wizHeaderRTL.bmp` (150×57) | Windows installer: header on the other pages |
 | `disk.icns` | macOS: icon of the mounted .dmg |

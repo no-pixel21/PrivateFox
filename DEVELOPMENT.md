@@ -43,7 +43,7 @@ Two places read it on startup:
    HTTPS-Only, cookie behavior and permissions.
 2. The **startup script** `privatefox.cfg`. It sets the matching about:config values
    and adds the shield button. `prepare_tree.py` appends the `general.config.*` prefs that
-   load it to Firefox's default prefs (`browser/app/profile/firefox.js`).
+   load it to Firefox's GRE default prefs (`modules/libpref/init/all.js`).
 
 The Firefox source code is not part of this repo. `build.sh` downloads it straight from Mozilla
 and verifies the SHA-512 checksum. If `prepare` aborts with "Mozilla changed the code", a spot
