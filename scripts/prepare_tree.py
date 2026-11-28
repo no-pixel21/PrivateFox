@@ -90,10 +90,11 @@ pref("general.config.sandbox_enabled", false);
 
 
 def add_autoconfig_prefs(src: Path) -> None:
-    # Appended to Firefox's own default prefs instead of shipping a separate
-    # defaults/pref/autoconfig.js: those files are always packaged and loaded early.
+    # Appended to Firefox's own GRE default prefs instead of shipping a separate
+    # defaults/pref/autoconfig.js: that file is always packaged and loaded early.
+    # Must be a GRE default pref file (greprefs.js in omni.ja): autoconfig ignores
+    # general.config.filename when it only comes from the app's firefox.js.
     candidates = [
-        src / "browser" / "app" / "profile" / "firefox.js",
         src / "modules" / "libpref" / "init" / "all.js",
     ]
     for f in candidates:
@@ -105,7 +106,7 @@ def add_autoconfig_prefs(src: Path) -> None:
             write(f, text.rstrip("\n") + "\n" + AUTOCONFIG_PREFS)
             info(f"Autoconfig prefs: appended to {f.relative_to(src)}")
             return
-    die("Neither browser/app/profile/firefox.js nor modules/libpref/init/all.js found. "
+    die("modules/libpref/init/all.js not found. "
         "Mozilla moved the default prefs; update add_autoconfig_prefs in scripts/prepare_tree.py.")
 
 
