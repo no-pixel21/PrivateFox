@@ -12,14 +12,23 @@ ac_add_options --with-branding=browser/branding/privatefox
 ac_add_options --with-app-name=privatefox
 ac_add_options --with-app-basename=PrivateFox
 
-# Nothing reported to Mozilla, no Mozilla auto-updates (updates = new release)
+# Nothing reported to Mozilla
 ac_add_options --disable-crashreporter
-ac_add_options --disable-updater
+
+# Automatic updates from our own server (GitHub Pages + Releases), never from Mozilla.
+# Updates are MAR files signed with our own key; scripts/prepare_tree.py puts our public
+# certificate into the updater and the update URL into the policies.
+ac_add_options --enable-update-channel=release
+export MAR_CHANNEL_ID=privatefox-release
+export ACCEPTED_MAR_CHANNEL_IDS=privatefox-release
 
 case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*)
     # Windows: no background agent reporting the default browser to Mozilla
     ac_add_options --disable-default-browser-agent
+    # Windows: the maintenance service needs a code-signing certificate; without it,
+    # updates ask for admin rights (UAC) once when Private Fox is in Program Files.
+    ac_add_options --disable-maintenance-service
     ;;
 esac
 

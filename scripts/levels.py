@@ -60,8 +60,11 @@ def _ubo_settings(level: int) -> dict:
     }
 
 
-def build_policies(level: int, version: str) -> dict:
-    """Complete policies.json for one level."""
+UPDATE_BASE = "https://no-pixel21.github.io/PrivateFox/update"
+
+
+def build_policies(level: int, version: str, platform: str = "") -> dict:
+    """Complete policies.json for one level. platform: win64 / mac / linux64 (update feed)."""
     p = {
         # --- always: no data collection, no ads, no Mozilla promos ---
         "DisableTelemetry": True,
@@ -133,6 +136,11 @@ def build_policies(level: int, version: str) -> dict:
         "HttpsOnlyMode": "force_enabled" if level >= 3 else ("enabled" if level >= 2 else "allowed"),
         "DisableFormHistory": level >= 3,
     }
+
+    # Automatic updates from our own feed (never Mozilla's), at every level.
+    if platform:
+        p["AppAutoUpdate"] = True
+        p["AppUpdateURL"] = f"{UPDATE_BASE}/{platform}/update.xml"
 
     if level >= 2:
         p["DNSOverHTTPS"] = {

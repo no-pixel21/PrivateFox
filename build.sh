@@ -157,6 +157,54 @@ cmd_package() {
   [[ $found -eq 1 ]] || warn "No packages found. Check the contents of $dist."
 }
 
+cmd_update_mar() {
+  # Build the complete update file (.mar) from the packaged app, sign it with the key in
+  # PF_UPDATE_KEY (PEM text, e.g. from the UPDATE_SIGNING_KEY secret) and write the
+  # metadata the update feed needs. Without a key no update file is produced.
+  need_src
+  local obj="$SRC_DIR/obj-privatefox" dist plat app mar_bin out cert
+  dist="$obj/dist"
+  case "$PLATFORM" in
+    win)   plat=win64;   app="$dist/privatefox" ;;
+    mac)   plat=mac;     app="$(ls -d "$dist"/privatefox/*.app 2>/dev/null | head -1)" ;;
+    *)     plat=linux64; app="$dist/privatefox" ;;
+  esac
+  cert="$REPO_DIR/update-signing/privatefox-update.der"
+
+  if [[ -z "${PF_UPDATE_KEY:-}" ]]; then
+    warn "PF_UPDATE_KEY not set – skipping the update file (see DEVELOPMENT.md → Automatic updates)."
+    return 0
+  fi
+  [[ -f "$cert" ]] || die "update-signing/privatefox-update.der missing – run scripts/make-update-key.sh"
+  [[ -n "$app" && -d "$app" ]] || die "Packaged app not found in $dist/privatefox – run './build.sh package' first."
+  mar_bin="$dist/host/bin/mar"
+  [[ -f "$mar_bin.exe" ]] && mar_bin="$mar_bin.exe"
+  [[ -f "$mar_bin" ]] || die "Mozilla's mar tool not found at $dist/host/bin/mar"
+
+  mkdir -p "$OUT_DIR/meta"
+  out="$OUT_DIR/privatefox-$VERSION.$plat.complete.mar"
+  info "Creating update file $(basename "$out") …"
+  rm -f "$out" "$out.unsigned"
+  MAR="$mar_bin" MOZ_PRODUCT_VERSION="$VERSION" MAR_CHANNEL_ID=privatefox-release \
+    bash "$SRC_DIR/tools/update-packaging/make_full_update.sh" "$out.unsigned" "$app"
+
+  info "Signing update file …"
+  "$PYTHON" -c 'import cryptography' 2>/dev/null \
+    || "$PYTHON" -m pip install --quiet --user cryptography \
+    || die "Could not install the Python 'cryptography' package."
+  local keyfile
+  keyfile="$(mktemp)"
+  chmod 600 "$keyfile"
+  printf '%s\n' "$PF_UPDATE_KEY" > "$keyfile"
+  "$PYTHON" "$REPO_DIR/scripts/sign_mar.py" sign --key "$keyfile" --in "$out.unsigned" --out "$out" --cert "$cert" \
+    || { rm -f "$keyfile"; die "Signing failed."; }
+  rm -f "$keyfile" "$out.unsigned"
+
+  "$PYTHON" "$REPO_DIR/scripts/update_info.py" info --mar "$out" --app "$app" --platform "$plat" \
+    --out "$OUT_DIR/meta/update-info-$plat.json"
+  info "→ out/$(basename "$out")"
+}
+
 cmd_run() {
   mach run
 }
@@ -195,11 +243,13 @@ Commands:
   bootstrap  install build toolchains (once)
   build      compile
   package    put .dmg (macOS) or .zip + installer (Windows) into out/
+  update-mar build + sign the automatic-update file (needs PF_UPDATE_KEY)
   run        start the freshly built browser
   clean      delete the build directory
 
 Environment variables:
   PF_WORK_DIR  work directory (default: ./work), no spaces!
+  PF_UPDATE_KEY  PEM private key for signing update files (update-mar)
   PF_JOBS      max parallel compile jobs (default: all cores); lower it if you run out of RAM
   PYTHON       python command (default: python3, else python)
 EOF
@@ -214,6 +264,7 @@ case "${1:-help}" in
   bootstrap) cmd_bootstrap ;;
   build)     cmd_build ;;
   package)   cmd_package ;;
+  update-mar) cmd_update_mar ;;
   run)       cmd_run ;;
   clean)     cmd_clean ;;
   help|-h|--help) usage ;;
