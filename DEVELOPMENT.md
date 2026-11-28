@@ -6,7 +6,9 @@ To just use it, download the finished version from **Releases** (see the [README
 ## How it's built
 
 GitHub Actions (`.github/workflows/build.yml`) builds Private Fox for Windows (x64) and macOS
-(Apple Silicon) and publishes the files as a release. This happens:
+(Apple Silicon) and publishes the files as a release. The macOS version is cross-compiled on a
+Linux runner (`PF_TARGET=mac`), like Mozilla's own macOS builds; configure downloads the macOS
+SDK and DMG tools from Mozilla's toolchain archive (`--enable-bootstrap`). This happens:
 
 - on every change to the build code on `main`,
 - once a day, but only if Mozilla released a new Firefox version (security fixes reach users within about a day),
