@@ -69,12 +69,16 @@ then pick the language under Settings → Language.
 
 ## Updates
 
-Private Fox does **not update itself**. A new version with the latest Firefox security fixes
-is published automatically every Monday. Download it regularly and install it over the old one.
-Your bookmarks and settings are kept.
+Private Fox **updates itself**, like Firefox. It checks for new versions in the background,
+downloads them and installs them the next time you restart it. New versions with the latest
+Firefox security fixes are built automatically.
 
-**Tip:** Click **Watch → Custom → Releases** at the top of this page and GitHub will notify you
-about every new version.
+Updates are signed – Private Fox only installs updates signed with the project's key.
+On Windows you may be asked for administrator permission once per update if Private Fox is
+installed in "Program Files".
+
+> Versions downloaded before automatic updates were added (v161.0-13 and earlier) can't update
+> themselves. Download the latest version once by hand.
 
 ---
 

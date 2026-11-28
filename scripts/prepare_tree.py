@@ -19,6 +19,13 @@ from levels import build_policies  # noqa: E402
 MARK = "Private Fox"
 LEVEL_COUNT = 5
 
+if sys.platform.startswith("win") or sys.platform in ("cygwin", "msys"):
+    PLATFORM = "win64"
+elif sys.platform == "darwin":
+    PLATFORM = "mac"
+else:
+    PLATFORM = "linux64"
+
 
 def die(msg: str) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
@@ -47,7 +54,7 @@ def install_overlay(src: Path, repo: Path, version: str) -> None:
         if f.is_file():
             shutil.copy2(f, target / f.name)
     for level in range(LEVEL_COUNT):
-        data = build_policies(level, version)
+        data = build_policies(level, version, PLATFORM)
         write(target / f"policies-level{level}.json", json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     info("Copied own files + 5 policy files to browser/privatefox")
 
@@ -163,6 +170,38 @@ def patch_policies_loader(src: Path) -> None:
     info("Policy engine: now loads policies-level<N>.json")
 
 
+# ------------------------------------------------------------------ 2b. Update signing certificate
+
+UPDATER_CERTS = [
+    "release_primary.der",
+    "release_secondary.der",
+    "nightly_aurora_level3_primary.der",
+    "nightly_aurora_level3_secondary.der",
+    "dep1.der",
+    "dep2.der",
+]
+
+
+def install_update_cert(src: Path, repo: Path) -> None:
+    cert = repo / "update-signing" / "privatefox-update.der"
+    if not cert.exists():
+        info("Update certificate: update-signing/privatefox-update.der missing – "
+             "automatic updates will NOT verify (run scripts/make-update-key.sh)")
+        return
+    d = src / "toolkit" / "mozapps" / "update" / "updater"
+    if not d.is_dir():
+        die(f"{d} not found – Mozilla moved the updater. Update install_update_cert.")
+    replaced = 0
+    for name in UPDATER_CERTS:
+        target = d / name
+        if target.exists():
+            shutil.copy2(cert, target)
+            replaced += 1
+    if not replaced:
+        die(f"No known updater certificates found in {d}. Update UPDATER_CERTS.")
+    info(f"Update certificate: replaced {replaced} Mozilla certificate(s) with ours")
+
+
 # ------------------------------------------------------------------ 3. Branding
 
 BRAND = {
@@ -234,6 +273,7 @@ def main() -> None:
     extend_package_manifest(src)
     add_autoconfig_prefs(src)
     patch_policies_loader(src)
+    install_update_cert(src, repo)
     setup_branding(src, repo)
     copy_mozconfig(src, repo)
     print("Private Fox applied.")
