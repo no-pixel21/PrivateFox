@@ -95,7 +95,6 @@ def build_policies(level: int, version: str) -> dict:
             "Locked": False,
         },
         "Homepage": {"URL": "https://duckduckgo.com/", "Locked": False},
-        "PasswordManagerEnabled": True,
         "ExtensionSettings": {
             "*": {"installation_mode": "allowed"},
             UBO_ID: {
