@@ -10,11 +10,6 @@ on:
         description: "Firefox version (empty = latest)"
         required: false
         default: ""
-      macos:
-        description: "Also build macOS (GitHub's macOS runners are often unavailable)"
-        type: boolean
-        required: false
-        default: false
   push:
     branches: [main]
     paths:
@@ -133,22 +128,29 @@ jobs:
           retention-days: 14
 
   macos:
+    # Cross-compiled on a Linux runner, the way Mozilla builds its own macOS releases.
+    # GitHub's macOS runners (3 cores, 7 GB RAM) hit the 6-hour limit.
     name: macOS (Apple Silicon)
-    # Off for now: only when started by hand with "Also build macOS" ticked.
     needs: check
-    if: ${{ needs.check.outputs.build == 'true' && github.event_name == 'workflow_dispatch' && inputs.macos }}
-    runs-on: macos-15
+    if: ${{ needs.check.outputs.build == 'true' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
     outputs:
       version: ${{ steps.ver.outputs.version }}
+    env:
+      PF_TARGET: mac
+      PF_WORK_DIR: /mnt/pfwork
+      MOZBUILD_STATE_PATH: /mnt/mozbuild
     steps:
       - uses: actions/checkout@v4
 
       - name: Free up disk space
         run: |
-          df -h /
-          sudo rm -rf "${ANDROID_HOME:-/nonexistent}" ~/Library/Android /usr/local/share/dotnet ~/.dotnet /Users/runner/hostedtoolcache/CodeQL || true
-          df -h /
+          df -h / /mnt
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          sudo mkdir -p /mnt/pfwork /mnt/mozbuild
+          sudo chown -R "$USER" /mnt/pfwork /mnt/mozbuild
+          df -h / /mnt
 
       - name: Determine Firefox version
         id: ver
@@ -164,13 +166,11 @@ jobs:
         continue-on-error: true
         env:
           PF_UPDATE_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
-        run: |
-          command -v xz >/dev/null || brew install xz
-          ./build.sh update-mar
+        run: ./build.sh update-mar
 
       - name: Free disk space after build
         if: always()
-        run: df -h /
+        run: df -h / /mnt
 
       - uses: actions/upload-artifact@v4
         with:

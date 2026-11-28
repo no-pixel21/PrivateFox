@@ -27,6 +27,9 @@ case "$(uname -s)" in
   Linux)                PLATFORM=linux ;;
   *)                    PLATFORM=unknown ;;
 esac
+# What to build for. Defaults to the machine we run on; PF_TARGET=mac on Linux cross-compiles
+# the macOS (Apple Silicon) version, the way Mozilla builds its own macOS releases.
+TARGET="${PF_TARGET:-$PLATFORM}"
 
 need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is missing. See DEVELOPMENT.md → Building locally."; }
 
@@ -120,7 +123,7 @@ cmd_fetch() {
 cmd_prepare() {
   need "$PYTHON"; need_src
   info "Applying Private Fox to the Firefox source …"
-  "$PYTHON" "$REPO_DIR/scripts/prepare_tree.py" --src "$SRC_DIR" --repo "$REPO_DIR" --version "$VERSION"
+  PF_TARGET="$TARGET" "$PYTHON" "$REPO_DIR/scripts/prepare_tree.py" --src "$SRC_DIR" --repo "$REPO_DIR" --version "$VERSION"
 }
 
 cmd_bootstrap() {
@@ -164,7 +167,7 @@ cmd_update_mar() {
   need_src
   local obj="$SRC_DIR/obj-privatefox" dist plat app mar_bin out cert
   dist="$obj/dist"
-  case "$PLATFORM" in
+  case "$TARGET" in
     win)   plat=win64;   app="$dist/privatefox" ;;
     mac)   plat=mac;     app="$(ls -d "$dist"/privatefox/*.app 2>/dev/null | head -1)" ;;
     *)     plat=linux64; app="$dist/privatefox" ;;
@@ -232,7 +235,7 @@ cmd_update() {
 
 usage() {
   cat <<EOF
-Private Fox – build script (Firefox $VERSION, platform: $PLATFORM)
+Private Fox – build script (Firefox $VERSION, platform: $PLATFORM, target: $TARGET)
 
 Commands:
   all        fetch + prepare + bootstrap + build + package
@@ -249,6 +252,7 @@ Commands:
 
 Environment variables:
   PF_WORK_DIR  work directory (default: ./work), no spaces!
+  PF_TARGET    win / mac / linux (default: this machine); PF_TARGET=mac on Linux cross-compiles
   PF_UPDATE_KEY  PEM private key for signing update files (update-mar)
   PF_JOBS      max parallel compile jobs (default: all cores); lower it if you run out of RAM
   PYTHON       python command (default: python3, else python)

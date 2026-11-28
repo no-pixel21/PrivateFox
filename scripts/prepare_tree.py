@@ -8,6 +8,7 @@ with a clear message instead of silently building something wrong.
 
 import argparse
 import json
+import os
 import re
 import shutil
 import sys
@@ -19,12 +20,16 @@ from levels import build_policies  # noqa: E402
 MARK = "Private Fox"
 LEVEL_COUNT = 5
 
-if sys.platform.startswith("win") or sys.platform in ("cygwin", "msys"):
+_TARGETS = {"win": "win64", "mac": "mac", "linux": "linux64"}
+if os.environ.get("PF_TARGET") in _TARGETS:
+    PLATFORM = _TARGETS[os.environ["PF_TARGET"]]
+elif sys.platform.startswith("win") or sys.platform in ("cygwin", "msys"):
     PLATFORM = "win64"
 elif sys.platform == "darwin":
     PLATFORM = "mac"
 else:
     PLATFORM = "linux64"
+CROSS_MAC = PLATFORM == "mac" and sys.platform != "darwin"
 
 
 def die(msg: str) -> None:
@@ -253,8 +258,17 @@ def setup_branding(src: Path, repo: Path) -> None:
 
 
 def copy_mozconfig(src: Path, repo: Path) -> None:
-    shutil.copy2(repo / "mozconfig", src / "mozconfig")
-    info("Copied mozconfig")
+    text = read(repo / "mozconfig")
+    if CROSS_MAC:
+        # Same as Mozilla's own macOS builds: cross-compile on Linux. --enable-bootstrap lets
+        # configure download the macOS SDK and the DMG tools from Mozilla's toolchain archive.
+        text += (
+            "\n# Private Fox: cross-compile the macOS (Apple Silicon) version on Linux\n"
+            "ac_add_options --target=aarch64-apple-darwin\n"
+            "ac_add_options --enable-bootstrap\n"
+        )
+    write(src / "mozconfig", text)
+    info("Copied mozconfig" + (" (cross-compiling for macOS)" if CROSS_MAC else ""))
 
 
 def main() -> None:
